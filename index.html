@@ -1,0 +1,45 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Template</title>
+    <meta name="description" content="Template">
+    <meta name="author" content="LeRoyce Pearson">
+
+    <link rel="stylesheet" href="css/index.css">
+
+</head>
+
+<body>
+
+    <canvas id="canvas2d" width="640", height="480"></canvas>
+
+    <script>
+        var memory;
+
+        let env = {
+            consoleLogS: (ptr, len) => {
+                const bytes = new Uint8Array(memory.buffer, ptr, len);
+                let s = "";
+                for (const b of bytes) {
+                    s += String.fromCharCode(b);
+                }
+                console.log(s);
+            },
+        };
+
+        fetch("main_web.wasm")
+            .then(response => response.arrayBuffer())
+            .then(bytes => WebAssembly.instantiate(bytes, { env }))
+            .then(results => results.instance)
+            .then(instance => {
+                memory = instance.exports.memory;
+                instance.exports.onInit();
+            });
+    </script>
+</body>
+
+</html>
