@@ -24,8 +24,8 @@ fetch("snake-game.wasm")
 
         // Timestep based on the Gaffer on Games post, "Fix Your Timestep"
         //    https://www.gafferongames.com/post/fix_your_timestep/
-        const MAX_DELTA = 0.25;
-        const TICK_DELTA = (16 / 1000);
+        const MAX_DELTA = new Float64Array(memory.buffer, instance.exports.MAX_DELTA_SECONDS, 1)[0];
+        const TICK_DELTA = new Float64Array(memory.buffer, instance.exports.TICK_DELTA_SECONDS, 1)[0];
         let prevTime = new Date().getTime();
         let tickTime = 0.0;
         let accumulator = 0.0;

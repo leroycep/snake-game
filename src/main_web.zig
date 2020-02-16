@@ -1,4 +1,8 @@
 const app = @import("app.zig");
+const constants = @import("constants.zig");
+
+export const MAX_DELTA_SECONDS = constants.MAX_DELTA_SECONDS;
+export const TICK_DELTA_SECONDS = constants.TICK_DELTA_SECONDS;
 
 export fn onInit() void {
     app.onInit();
