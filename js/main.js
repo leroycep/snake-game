@@ -26,17 +26,16 @@ fetch("snake-game.wasm")
         //    https://www.gafferongames.com/post/fix_your_timestep/
         const MAX_DELTA = new Float64Array(memory.buffer, instance.exports.MAX_DELTA_SECONDS, 1)[0];
         const TICK_DELTA = new Float64Array(memory.buffer, instance.exports.TICK_DELTA_SECONDS, 1)[0];
-        let prevTime = new Date().getTime();
+        let prevTime = performance.now();
         let tickTime = 0.0;
         let accumulator = 0.0;
 
-        function step() {
-            const newTime = new Date().getTime();
-            const delta = (newTime - prevTime) / 1000; // Delta in seconds
+        function step(currentTime) {
+            let delta = (currentTime - prevTime) / 1000; // Delta in seconds
             if (delta > MAX_DELTA) {
                 delta = MAX_DELTA; // Try to avoid spiral of death when lag hits
             }
-            prevTime = newTime;
+            prevTime = currentTime;
 
             accumulator += delta;
 
