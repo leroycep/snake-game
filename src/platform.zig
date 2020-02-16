@@ -1,8 +1,24 @@
+const builtin = @import("builtin");
 
-pub extern fn consoleLogS(_: [*]const u8, _: c_uint) void;
-pub extern fn getScreenW() i32;
-pub extern fn getScreenH() i32;
-pub extern fn clearRect(x: i32, y: i32, width: i32, height: i32) void;
-pub extern fn setFillStyle(r: u8, g: u8, b: u8) void;
-pub extern fn fillRect(x: i32, y: i32, width: i32, height: i32) void;
+pub const is_web = builtin.arch == builtin.Arch.wasm32;
+const web = @import("platform/web.zig");
 
+pub usingnamespace if (is_web) web;
+
+pub const Vec2 = struct { x: i32, y: i32 };
+pub const Rect = struct { x: i32, y: i32, w: i32, h: i32 };
+
+pub fn log(message: []const u8) void {
+    if (is_web) {
+        web.consoleLogS(message.ptr, message.len);
+    }
+}
+
+pub fn getScreenSize() Vec2 {
+    if (is_web) {
+        return .{
+            .x = web.getScreenW(),
+            .y = web.getScreenH(),
+        };
+    }
+}
