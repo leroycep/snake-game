@@ -2,7 +2,24 @@ let canvas = document.getElementById("canvas2d");
 
 let context = canvas.getContext('2d');
 
-context.fillStyle = 'rgb(200, 0, 0)';
-context.fillRect(10, 10, 50, 50);
+function getScreenW() {
+    return context.canvas.width;
+}
 
-export {};
+function getScreenH() {
+    return context.canvas.height;
+}
+
+function clearRect(x, y, width, height) {
+    context.clearRect(x, y, width, height);
+}
+
+function setFillStyle(r, g, b) {
+    context.fillStyle = `rgb(${r}, ${g}, ${b})`;
+}
+
+function fillRect(x, y, width, height) {
+    context.fillRect(x, y, width, height);
+}
+
+export default {getScreenW, getScreenH, clearRect, setFillStyle, fillRect};

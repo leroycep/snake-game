@@ -19,30 +19,7 @@
         <canvas id="canvas2d" width="640", height="480"></canvas>
     </div>
 
-    <script type="module" src="./js/canvas.js"></script>
-    <script>
-        var memory;
-
-        let env = {
-            consoleLogS: (ptr, len) => {
-                const bytes = new Uint8Array(memory.buffer, ptr, len);
-                let s = "";
-                for (const b of bytes) {
-                    s += String.fromCharCode(b);
-                }
-                console.log(s);
-            },
-        };
-
-        fetch("snake-game.wasm")
-            .then(response => response.arrayBuffer())
-            .then(bytes => WebAssembly.instantiate(bytes, { env }))
-            .then(results => results.instance)
-            .then(instance => {
-                memory = instance.exports.memory;
-                instance.exports.onInit();
-            });
-    </script>
+    <script type="module" src="./js/main.js"></script>
 </body>
 
 </html>
