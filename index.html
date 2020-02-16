@@ -9,14 +9,17 @@
     <meta name="description" content="Template">
     <meta name="author" content="LeRoyce Pearson">
 
-    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="index.css">
 
 </head>
 
 <body>
 
-    <canvas id="canvas2d" width="640", height="480"></canvas>
+    <div class="container">
+        <canvas id="canvas2d" width="640", height="480"></canvas>
+    </div>
 
+    <script type="module" src="./js/canvas.js"></script>
     <script>
         var memory;
 
@@ -31,7 +34,7 @@
             },
         };
 
-        fetch("main_web.wasm")
+        fetch("snake-game.wasm")
             .then(response => response.arrayBuffer())
             .then(bytes => WebAssembly.instantiate(bytes, { env }))
             .then(results => results.instance)
