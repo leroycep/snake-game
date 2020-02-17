@@ -5,6 +5,18 @@ const sep_str = std.fs.path.sep_str;
 const SITE_DIR = "www";
 
 pub fn build(b: *Builder) void {
+    const target = b.standardTargetOptions(null);
+    const exe = b.addExecutable("snake-game", "src/main_native.zig");
+    exe.setBuildMode(b.standardReleaseOptions());
+    exe.setTheTarget(target);
+    exe.linkSystemLibrary("SDL2");
+    exe.addIncludeDir("/usr/include/SDL2");
+    exe.linkLibC();
+    exe.install();
+
+    const run_cmd = exe.run();
+    run_cmd.step.dependOn(b.getInstallStep());
+
     const wasm = b.addStaticLibrary("snake-game", "src/main_web.zig");
     const wasmOutDir = b.fmt("{}" ++ sep_str ++ SITE_DIR, .{b.install_prefix});
     wasm.setOutputDir(wasmOutDir);
@@ -24,4 +36,5 @@ pub fn build(b: *Builder) void {
     wasm.step.dependOn(&jsInstall.step);
 
     b.step("wasm", "Build WASM binary").dependOn(&wasm.step);
+    b.step("run", "Run the native binary").dependOn(&run_cmd.step);
 }

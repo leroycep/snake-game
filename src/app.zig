@@ -1,9 +1,20 @@
+const std = @import("std");
 const platform = @import("platform.zig");
 
 var x: i32 = 10;
 
 pub fn onInit() void {
     platform.log("Hello, world!");
+}
+
+pub fn onEvent(event: platform.Event) void {
+    switch (event) {
+        .Quit => platform.quit = true,
+        .KeyDown => |ev| if (ev.scancode == .ESCAPE) {
+            platform.quit = true;
+        },
+        else => {},
+    }
 }
 
 pub fn update(current_time: f64, delta: f64) void {
