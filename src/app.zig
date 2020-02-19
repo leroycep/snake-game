@@ -3,6 +3,7 @@ const platform = @import("platform.zig");
 usingnamespace @import("constants.zig");
 const Vec2f = platform.Vec2f;
 
+var goto_pos = Vec2f{ .x = 0, .y = 0 };
 var head_pos = Vec2f{ .x = 100, .y = 100 };
 var segments = [_]?Vec2f{null} ** MAX_SEGMENTS;
 var next_segment_idx: usize = 0;
@@ -19,16 +20,23 @@ pub fn onEvent(event: platform.Event) void {
         .KeyDown => |ev| if (ev.scancode == .ESCAPE) {
             platform.quit();
         },
-        .MouseMotion => |mouse_pos| platform.warn("mouse_pos: {}\n", .{mouse_pos}),
+        .MouseMotion => |mouse_pos| {
+            goto_pos = Vec2f{
+                .x = @intToFloat(f32, mouse_pos.x),
+                .y = @intToFloat(f32, mouse_pos.y),
+            };
+        },
         else => {},
     }
 }
 
 pub fn update(current_time: f64, delta: f64) void {
     // Move head
-    head_pos.x += @floatCast(f32, SNAKE_SPEED * delta);
-    if (head_pos.x > @intToFloat(f32, platform.getScreenSize().x)) {
-        head_pos.x = 0;
+    const head_offset = goto_pos.sub(&head_pos);
+    const head_speed = @floatCast(f32, SNAKE_SPEED * delta);
+    if (head_offset.magnitude() > head_speed) {
+        const head_movement = head_offset.normalize().scalMul(head_speed);
+        head_pos = head_pos.add(&head_movement);
     }
 
     // Make segments trail head
