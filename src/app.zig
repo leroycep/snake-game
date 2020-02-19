@@ -10,7 +10,6 @@ var tail_pos = Vec2f{ .x = 100, .y = 100 };
 var frames: usize = 0;
 
 pub fn onInit() void {
-    platform.log("Hello, world!");
     addSegment();
 }
 
@@ -77,7 +76,7 @@ pub fn render(alpha: f64) void {
 
 fn addSegment() void {
     if (next_segment_idx == segments.len) {
-        platform.log("Ran out of space for snake segments");
+        platform.warn("Ran out of space for snake segments\n", .{});
         return;
     }
     segments[next_segment_idx] = tail_pos;

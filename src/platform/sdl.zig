@@ -95,10 +95,6 @@ pub fn getScreenSize() Vec2 {
     return rect;
 }
 
-pub fn log(message: []const u8) void {
-    std.debug.warn("{}\n", .{message});
-}
-
 pub fn renderPresent() void {
     c.SDL_RenderPresent(renderer);
 }

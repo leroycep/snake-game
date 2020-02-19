@@ -13,7 +13,3 @@ pub fn getScreenSize() Vec2 {
         .y = getScreenH(),
     };
 }
-
-pub fn log(message: []const u8) void {
-    consoleLogS(message.ptr, message.len);
-}
