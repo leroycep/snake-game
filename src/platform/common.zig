@@ -1,4 +1,41 @@
 pub const Vec2 = struct { x: i32, y: i32 };
+pub const Vec2f = struct {
+    x: f32,
+    y: f32,
+
+    pub fn scalMul(self: *const Vec2f, scal: f32) Vec2f {
+        return Vec2f{
+            .x = self.x * scal,
+            .y = self.y * scal,
+        };
+    }
+
+    pub fn add(self: *const Vec2f, other: *const Vec2f) Vec2f {
+        return .{
+            .x = self.x + other.x,
+            .y = self.y + other.y,
+        };
+    }
+
+    pub fn sub(self: *const Vec2f, other: *const Vec2f) Vec2f {
+        return .{
+            .x = self.x - other.x,
+            .y = self.y - other.y,
+        };
+    }
+
+    pub fn normalize(self: *const Vec2f) Vec2f {
+        const mag = self.magnitude();
+        return Vec2f{
+            .x = self.x / mag,
+            .y = self.y / mag,
+        };
+    }
+
+    pub fn magnitude(self: *const Vec2f) f32 {
+        return @sqrt(self.x * self.x + self.y * self.y);
+    }
+};
 pub const Rect = struct { x: i32, y: i32, w: i32, h: i32 };
 
 pub const EventTag = enum {

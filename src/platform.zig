@@ -1,3 +1,4 @@
+const std = @import("std");
 const builtin = @import("builtin");
 pub usingnamespace @import("platform/common.zig");
 
@@ -8,3 +9,19 @@ const sdl = @import("platform/sdl.zig");
 pub usingnamespace if (is_web) web else sdl;
 
 pub var quit = false;
+
+pub const warn = if (builtin.arch == .wasm32)
+    warnWeb
+else
+    std.debug.warn;
+
+fn warnWeb(comptime fmt: []const u8, args: var) void {
+    var buf: [1000]u8 = undefined;
+    const text = std.fmt.bufPrint(buf[0..], fmt, args) catch {
+        const message = "warn: bufPrint failed. too long? format string:";
+        web.consoleLogS(message, message.len);
+        web.consoleLogS(fmt.ptr, fmt.len);
+        return;
+    };
+    web.consoleLogS(text.ptr, text.len);
+}
