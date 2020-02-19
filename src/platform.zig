@@ -8,7 +8,12 @@ const sdl = @import("platform/sdl.zig");
 
 pub usingnamespace if (is_web) web else sdl;
 
-pub var quit = false;
+pub export const QUIT: u8 = 1;
+pub export var shouldQuit: u8 = 0;
+
+pub fn quit() void {
+    shouldQuit = QUIT;
+}
 
 pub const warn = if (builtin.arch == .wasm32)
     warnWeb

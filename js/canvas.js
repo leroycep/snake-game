@@ -22,4 +22,4 @@ function fillRect(x, y, width, height) {
     context.fillRect(x, y, width, height);
 }
 
-export default {getScreenW, getScreenH, clearRect, setFillStyle, fillRect};
+export default {getScreenW, getScreenH, clearRect, setFillStyle, fillRect, context, element: canvas};

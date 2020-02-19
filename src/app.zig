@@ -15,10 +15,11 @@ pub fn onInit() void {
 
 pub fn onEvent(event: platform.Event) void {
     switch (event) {
-        .Quit => platform.quit = true,
+        .Quit => platform.quit(),
         .KeyDown => |ev| if (ev.scancode == .ESCAPE) {
-            platform.quit = true;
+            platform.quit();
         },
+        .MouseMotion => |mouse_pos| platform.warn("mouse_pos: {}\n", .{mouse_pos}),
         else => {},
     }
 }

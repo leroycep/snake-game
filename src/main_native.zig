@@ -18,7 +18,7 @@ pub fn main() !void {
     var tickTime: f64 = 0.0;
     var accumulator: f64 = 0.0;
 
-    while (!platform.quit) {
+    while (!platform.shouldQuit) {
         while (platform.pollEvent()) |event| {
             app.onEvent(event);
         }

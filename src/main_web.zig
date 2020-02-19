@@ -8,6 +8,15 @@ export fn onInit() void {
     app.onInit();
 }
 
+export fn onMouseMove(x: i32, y: i32) void {
+    app.onEvent(.{
+        .MouseMotion = .{
+            .x = x,
+            .y = y,
+        },
+    });
+}
+
 export fn update(current_time: f64, delta: f64) void {
     app.update(current_time, delta);
 }
