@@ -10,7 +10,8 @@ pub fn build(b: *Builder) void {
     exe.setBuildMode(b.standardReleaseOptions());
     exe.setTheTarget(target);
     exe.linkSystemLibrary("SDL2");
-    exe.addIncludeDir("/usr/include/SDL2");
+    exe.addIncludeDir("./c/include/");
+    exe.addCSourceFile("./c/src/glad.c", &[_][]const u8{});
     exe.linkLibC();
     exe.install();
 
