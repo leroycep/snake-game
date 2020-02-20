@@ -24,7 +24,10 @@ const Segment = struct {
 };
 
 pub fn onInit() void {
-    addSegment();
+    var i: usize = 0;
+    while (i < 20) : (i += 1) {
+        addSegment();
+    }
 }
 
 pub fn onEvent(event: platform.Event) void {
@@ -104,4 +107,5 @@ fn addSegment() void {
         return;
     }
     segments[next_segment_idx] = tail_segment;
+    next_segment_idx += 1;
 }
