@@ -69,7 +69,7 @@ pub fn renderPresent() void {
 
 pub fn getScreenSize() Vec2 {
     var rect = Vec2{ .x = 0, .y = 0 };
-    sdlAssertZero(c.SDL_GetRendererOutputSize(renderer, &rect.x, &rect.y));
+    c.SDL_GL_GetDrawableSize(window, &rect.x, &rect.y);
     return rect;
 }
 
