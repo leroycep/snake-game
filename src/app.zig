@@ -4,6 +4,7 @@ usingnamespace @import("constants.zig");
 const Vec2f = platform.Vec2f;
 
 var goto_pos = Vec2f{ .x = 0, .y = 0 };
+var head_dir_rads: f32 = 0;
 var head_pos = Vec2f{ .x = 100, .y = 100 };
 var segments = [_]?Vec2f{null} ** MAX_SEGMENTS;
 var next_segment_idx: usize = 0;
@@ -35,7 +36,10 @@ pub fn update(current_time: f64, delta: f64) void {
     const head_offset = goto_pos.sub(&head_pos);
     const head_speed = @floatCast(f32, SNAKE_SPEED * delta);
     if (head_offset.magnitude() > head_speed) {
-        const head_movement = head_offset.normalize().scalMul(head_speed);
+        const head_dir = head_offset.normalize();
+        const head_movement = head_dir.scalMul(head_speed);
+
+        head_dir_rads = std.math.atan2(f32, head_dir.x, head_dir.y);
         head_pos = head_pos.add(&head_movement);
     }
 
@@ -73,7 +77,7 @@ pub fn render(alpha: f64) void {
     platform.clearRect(0, 0, screen_size.x, screen_size.y);
 
     platform.setFillStyle(100, 0, 0);
-    platform.fillRect(@floatToInt(i32, head_pos.x - 25), @floatToInt(i32, head_pos.y) - 25, 50, 50);
+    platform.fillRect2(@floatToInt(i32, head_pos.x), @floatToInt(i32, head_pos.y), 50, 50, head_dir_rads);
 
     var idx: usize = 0;
     while (segments[idx]) |segment| {
