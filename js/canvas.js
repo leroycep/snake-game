@@ -25,7 +25,7 @@ function fillRect(x, y, width, height) {
 function fillRect2(x, y, width, height, radians) {
   context.save();
   context.translate(x, y);
-  context.rotate(-radians);
+  context.rotate(radians);
   context.fillRect(-width / 2, -height / 2, width, height);
   context.restore();
 }

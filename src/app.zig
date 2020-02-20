@@ -4,12 +4,24 @@ usingnamespace @import("constants.zig");
 const Vec2f = platform.Vec2f;
 
 var goto_pos = Vec2f{ .x = 0, .y = 0 };
-var head_dir_rads: f32 = 0;
-var head_pos = Vec2f{ .x = 100, .y = 100 };
-var segments = [_]?Vec2f{null} ** MAX_SEGMENTS;
+var head_segment = Segment{
+    .pos = Vec2f{ .x = 100, .y = 100 },
+    .dir = 0,
+};
+var segments = [_]?Segment{null} ** MAX_SEGMENTS;
 var next_segment_idx: usize = 0;
-var tail_pos = Vec2f{ .x = 100, .y = 100 };
+var tail_segment = Segment{
+    .pos = Vec2f{ .x = 100, .y = 100 },
+    .dir = 0,
+};
 var frames: usize = 0;
+
+const Segment = struct {
+    pos: Vec2f,
+
+    /// In radians
+    dir: f32,
+};
 
 pub fn onInit() void {
     addSegment();
@@ -33,37 +45,36 @@ pub fn onEvent(event: platform.Event) void {
 
 pub fn update(current_time: f64, delta: f64) void {
     // Move head
-    const head_offset = goto_pos.sub(&head_pos);
+    const head_offset = goto_pos.sub(&head_segment.pos);
     const head_speed = @floatCast(f32, SNAKE_SPEED * delta);
     if (head_offset.magnitude() > head_speed) {
         const head_dir = head_offset.normalize();
         const head_movement = head_dir.scalMul(head_speed);
 
-        head_dir_rads = std.math.atan2(f32, head_dir.x, head_dir.y);
-        head_pos = head_pos.add(&head_movement);
+        head_segment.dir = std.math.atan2(f32, head_dir.y, head_dir.x);
+        head_segment.pos = head_segment.pos.add(&head_movement);
     }
 
     // Make segments trail head
     var segment_idx: usize = 0;
-    var prev_segment = &head_pos;
-    while (prev_segment != &tail_pos) : (segment_idx += 1) {
-        var cur_segment = if (segments[segment_idx] != null) &segments[segment_idx].? else &tail_pos;
+    var prev_segment = &head_segment;
+    while (prev_segment != &tail_segment) : (segment_idx += 1) {
+        var cur_segment = if (segments[segment_idx] != null) &segments[segment_idx].? else &tail_segment;
 
         var dist_from_prev: f32 = undefined;
-        if (cur_segment != &tail_pos) {
+        if (cur_segment != &tail_segment) {
             dist_from_prev = SNAKE_SEGMENT_LENGTH;
         } else {
             dist_from_prev = SNAKE_TAIL_LENGTH / 2 + SNAKE_SEGMENT_LENGTH / 2;
         }
 
-        var vec_from_prev = Vec2f{
-            .x = cur_segment.x - prev_segment.x,
-            .y = cur_segment.y - prev_segment.y,
-        };
+        var vec_from_prev = cur_segment.pos.sub(&prev_segment.pos);
         if (vec_from_prev.magnitude() > dist_from_prev) {
             const dir_from_prev = vec_from_prev.normalize();
             const new_offset_from_prev = dir_from_prev.scalMul(dist_from_prev);
-            cur_segment.* = prev_segment.add(&new_offset_from_prev);
+
+            cur_segment.dir = std.math.atan2(f32, dir_from_prev.y, dir_from_prev.x);
+            cur_segment.pos = prev_segment.pos.add(&new_offset_from_prev);
         }
 
         prev_segment = cur_segment;
@@ -77,14 +88,14 @@ pub fn render(alpha: f64) void {
     platform.clearRect(0, 0, screen_size.x, screen_size.y);
 
     platform.setFillStyle(100, 0, 0);
-    platform.fillRect2(@floatToInt(i32, head_pos.x), @floatToInt(i32, head_pos.y), 50, 50, head_dir_rads);
+    platform.fillRect2(@floatToInt(i32, head_segment.pos.x), @floatToInt(i32, head_segment.pos.y), 50, 50, head_segment.dir);
 
     var idx: usize = 0;
     while (segments[idx]) |segment| {
-        platform.fillRect(@floatToInt(i32, segment.x) - 25, @floatToInt(i32, segment.y) - 15, SNAKE_SEGMENT_LENGTH, 30);
+        platform.fillRect2(@floatToInt(i32, segment.pos.x), @floatToInt(i32, segment.pos.y), SNAKE_SEGMENT_LENGTH, 30, segment.dir);
         idx += 1;
     }
-    platform.fillRect(@floatToInt(i32, tail_pos.x - (SNAKE_TAIL_LENGTH / 2)), @floatToInt(i32, tail_pos.y - 10), SNAKE_TAIL_LENGTH, 20);
+    platform.fillRect2(@floatToInt(i32, tail_segment.pos.x), @floatToInt(i32, tail_segment.pos.y), SNAKE_TAIL_LENGTH, 20, tail_segment.dir);
 }
 
 fn addSegment() void {
@@ -92,5 +103,5 @@ fn addSegment() void {
         platform.warn("Ran out of space for snake segments\n", .{});
         return;
     }
-    segments[next_segment_idx] = tail_pos;
+    segments[next_segment_idx] = tail_segment;
 }
