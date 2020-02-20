@@ -36,5 +36,10 @@ pub fn build(b: *Builder) void {
     wasm.step.dependOn(&jsInstall.step);
 
     b.step("wasm", "Build WASM binary").dependOn(&wasm.step);
+    b.step("native", "Build the native binary").dependOn(&exe.step);
     b.step("run", "Run the native binary").dependOn(&run_cmd.step);
+
+    const all = b.step("all", "Build all binaries");
+    all.dependOn(&wasm.step);
+    all.dependOn(&exe.step);
 }
