@@ -1,3 +1,4 @@
+pub const Color = struct { r: u8, g: u8, b: u8 };
 pub const Vec2 = struct { x: i32, y: i32 };
 pub const Vec2f = struct {
     x: f32,

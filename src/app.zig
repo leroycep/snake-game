@@ -90,14 +90,19 @@ pub fn render(alpha: f64) void {
     const screen_size = platform.getScreenSize();
     platform.clearRect(0, 0, screen_size.x, screen_size.y);
 
-    platform.setFillStyle(100, 0, 0);
+    platform.setFillStyle(SEGMENT_COLORS[0].r, SEGMENT_COLORS[0].g, SEGMENT_COLORS[0].b);
     platform.fillRect2(@floatToInt(i32, head_segment.pos.x), @floatToInt(i32, head_segment.pos.y), 50, 50, head_segment.dir);
 
     var idx: usize = 0;
     while (segments[idx]) |segment| {
+        const color = SEGMENT_COLORS[(idx + 1) %  SEGMENT_COLORS.len];
+        platform.setFillStyle(color.r, color.g, color.b);
+
         platform.fillRect2(@floatToInt(i32, segment.pos.x), @floatToInt(i32, segment.pos.y), SNAKE_SEGMENT_LENGTH, 30, segment.dir);
         idx += 1;
     }
+        const color = SEGMENT_COLORS[(idx + 1) %  SEGMENT_COLORS.len];
+    platform.setFillStyle(color.r, color.g, color.b);
     platform.fillRect2(@floatToInt(i32, tail_segment.pos.x), @floatToInt(i32, tail_segment.pos.y), SNAKE_TAIL_LENGTH, 20, tail_segment.dir);
 }
 
