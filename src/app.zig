@@ -15,6 +15,9 @@ var tail_segment = Segment{
     .dir = 0,
 };
 var frames: usize = 0;
+var shader_program: platform.GLuint = undefined;
+var vao: platform.GLuint = undefined;
+var vbo: platform.GLuint = undefined;
 
 const Segment = struct {
     pos: Vec2f,
@@ -32,6 +35,66 @@ pub fn onInit() void {
     platform.glEnable(platform.GL_DEBUG_OUTPUT);
     platform.glDebugMessageCallback(glErrCallback, null);
     platform.glDisable(platform.GL_CULL_FACE);
+
+    platform.glGenBuffers(1, &vbo);
+    platform.glGenVertexArrays(1, &vao);
+
+    const vShaderSrc =
+        \\ #version 300 es
+        \\ layout(location = 0) in vec2 a_position;
+        \\ layout(location = 1) in vec3 a_color;
+        \\ out vec3 v_color;
+        \\ void main() {
+        \\   v_color = a_color;
+        \\   gl_Position = vec4(a_position.x, a_position.y, 0.0, 1.0);
+        \\ }
+    ;
+    const fShaderSrc =
+        \\ #version 300 es
+        \\ precision mediump float;
+        \\ in vec3 v_color;
+        \\ out vec4 o_fragColor;
+        \\ void main() {
+        \\   o_fragColor = vec4(v_color, 1.0);
+        \\ }
+    ;
+
+    const vShader = platform.glCreateShader(platform.GL_VERTEX_SHADER);
+    platform.glShaderSource(vShader, 1, &(vShaderSrc[0..].ptr), null);
+    platform.glCompileShader(vShader);
+    defer platform.glDeleteShader(vShader);
+
+    var success: c_int = undefined;
+    platform.glGetShaderiv(vShader, platform.GL_COMPILE_STATUS, &success);
+    if (success == 0) {
+        var infoLog: [512]u8 = [_]u8{0} ** 512;
+        platform.glGetShaderInfoLog(vShader, infoLog.len, null, &infoLog);
+        platform.warn("Error compiling vertex shader: {s}", .{infoLog});
+    }
+
+    const fShader = platform.glCreateShader(platform.GL_FRAGMENT_SHADER);
+    platform.glShaderSource(fShader, 1, &(fShaderSrc[0..].ptr), null);
+    platform.glCompileShader(fShader);
+    defer platform.glDeleteShader(fShader);
+
+    platform.glGetShaderiv(fShader, platform.GL_COMPILE_STATUS, &success);
+    if (success == 0) {
+        var infoLog: [512]u8 = [_]u8{0} ** 512;
+        platform.glGetShaderInfoLog(fShader, infoLog.len, null, &infoLog);
+        platform.warn("Error compiling fragment shader: {s}", .{infoLog});
+    }
+
+    shader_program = platform.glCreateProgram();
+    platform.glAttachShader(shader_program, vShader);
+    platform.glAttachShader(shader_program, fShader);
+    platform.glLinkProgram(shader_program);
+
+    platform.glGetProgramiv(shader_program, platform.GL_LINK_STATUS, &success);
+    if (success == 0) {
+        var infoLog: [512]u8 = [_]u8{0} ** 512;
+        platform.glGetProgramInfoLog(shader_program, infoLog.len, null, &infoLog);
+        platform.warn("Error linking shader program: {s}", .{infoLog});
+    }
 }
 
 export fn glErrCallback(src: c_uint, errType: c_uint, id: c_uint, severity: c_uint, length: c_int, message: ?[*:0]const u8, userParam: ?*const c_void) void {
@@ -102,15 +165,28 @@ pub fn render(alpha: f64) void {
     platform.glClearColor(1, 1, 1, 1);
     platform.glClear(platform.GL_COLOR_BUFFER_BIT);
 
-    platform.glBegin(platform.GL_TRIANGLES);
-    {
-        platform.glColor3f(0, 0, 0);
-        platform.glVertex2f(-0.5, -0.5);
-        platform.glVertex2f(0, 0);
-        platform.glVertex2f(0.5, -0.5);
-    }
-    platform.glEnd();
-    platform.glFlush();
+    const r = @intToFloat(f32, SEGMENT_COLORS[0].r) / 255.0;
+    const g = @intToFloat(f32, SEGMENT_COLORS[0].g) / 255.0;
+    const b = @intToFloat(f32, SEGMENT_COLORS[0].b) / 255.0;
+    const verts = [_]platform.GLfloat{
+        1,  0, r, g, b,
+        0,  1, r, g, b,
+        -1, 0, r, g, b,
+    };
+
+    platform.glBindVertexArray(vao);
+    platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
+    platform.glBufferData(platform.GL_ARRAY_BUFFER, verts.len * @sizeOf(f32), &verts, platform.GL_STATIC_DRAW);
+
+    platform.glVertexAttribPointer(0, 2, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), null);
+    platform.glEnableVertexAttribArray(0);
+
+    platform.glVertexAttribPointer(1, 3, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), @intToPtr(*c_void, 2 * @sizeOf(f32)));
+    platform.glEnableVertexAttribArray(1);
+
+    platform.glUseProgram(shader_program);
+
+    platform.glDrawArrays(platform.GL_TRIANGLES, 0, 3);
 
     //    var idx: usize = 0;
     //    while (segments[idx]) |segment| {

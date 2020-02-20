@@ -42,6 +42,7 @@ pub fn init(screenWidth: i32, screenHeight: i32) void {
     };
 
     context = c.SDL_GL_CreateContext(window);
+    sdlAssertZero(c.SDL_GL_SetSwapInterval(1));
 
     if (glad.gladLoadGL() != 1) {
         panic("Failed to initialize GLAD\n", .{});
@@ -60,7 +61,7 @@ pub fn deinit() void {
 
 pub fn sdlAssertZero(ret: c_int) void {
     if (ret == 0) return;
-    panic("sdl function returned an error: {c}\n", .{c.SDL_GetError()});
+    panic("sdl function returned an error: {s}\n", .{c.SDL_GetError()});
 }
 
 pub fn renderPresent() void {
