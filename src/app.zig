@@ -17,6 +17,7 @@ var tail_segment = Segment{
 var frames: usize = 0;
 var shader_program: platform.GLuint = undefined;
 var vbo: platform.GLuint = undefined;
+var ebo: platform.GLuint = undefined;
 var projectionMatrixUniformLocation: platform.GLint = undefined;
 
 const Segment = struct {
@@ -33,6 +34,7 @@ pub fn onInit() void {
     }
 
     vbo = platform.glCreateBuffer();
+    ebo = platform.glCreateBuffer();
     //vao = platform.glCreateVertexArrays();
 
     const vShaderSrc =
@@ -169,13 +171,20 @@ pub fn render(alpha: f64) void {
     const g = @intToFloat(f32, SEGMENT_COLORS[0].g) / 255.0;
     const b = @intToFloat(f32, SEGMENT_COLORS[0].b) / 255.0;
     const verts = [_]platform.GLfloat{
-        100,  0,   r, g, b,
-        0,    100, r, g, b,
-        -100, 0,   r, g, b,
+        head_segment.pos.x - 25, head_segment.pos.y - 25, r, g, b,
+        head_segment.pos.x + 25, head_segment.pos.y - 25, r, g, b,
+        head_segment.pos.x + 25, head_segment.pos.y + 25, r, g, b,
+        head_segment.pos.x - 25, head_segment.pos.y + 25, r, g, b,
+    };
+    const indices = [_]platform.GLuint{
+        0, 1, 2,
+        2, 3, 0,
     };
 
     platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
     platform.glBufferData(platform.GL_ARRAY_BUFFER, verts.len * @sizeOf(f32), &verts, platform.GL_STATIC_DRAW);
+    platform.glBindBuffer(platform.GL_ELEMENT_ARRAY_BUFFER, ebo);
+    platform.glBufferData(platform.GL_ELEMENT_ARRAY_BUFFER, indices.len * @sizeOf(platform.GLuint), &indices, platform.GL_STATIC_DRAW);
 
     platform.glUniformMatrix4fv(projectionMatrixUniformLocation, 1, platform.GL_FALSE, &projectionMatrix);
 
@@ -187,7 +196,7 @@ pub fn render(alpha: f64) void {
 
     platform.glUseProgram(shader_program);
 
-    platform.glDrawArrays(platform.GL_TRIANGLES, 0, 3);
+    platform.glDrawElements(platform.GL_TRIANGLES, 6, platform.GL_UNSIGNED_INT, null);
 
     //    var idx: usize = 0;
     //    while (segments[idx]) |segment| {
