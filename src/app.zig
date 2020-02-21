@@ -156,11 +156,12 @@ pub fn update(current_time: f64, delta: f64) void {
 pub fn render(alpha: f64) void {
     const screen_size = platform.getScreenSize();
     const projectionMatrix = [_]f32{
-        2 / @intToFloat(f32, screen_size.x), 0,                                   0,  -1,
-        0,                                   2 / @intToFloat(f32, screen_size.y), 0,  -1,
-        0,                                   0,                                   -1, 0,
-        0,                                   0,                                   0,  1,
+        2 / @intToFloat(f32, screen_size.x), 0,                                    0, -1,
+        0,                                   -2 / @intToFloat(f32, screen_size.y), 0, 1,
+        0,                                   0,                                    1, 0,
+        0,                                   0,                                    0, 1,
     };
+
     platform.glClearColor(1, 1, 1, 1);
     platform.glClear(platform.GL_COLOR_BUFFER_BIT);
 
