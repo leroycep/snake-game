@@ -155,48 +155,86 @@ pub fn update(current_time: f64, delta: f64) void {
     frames += 1;
 }
 
-pub fn render(alpha: f64) void {
-    const screen_size = platform.getScreenSize();
-    const projectionMatrix = [_]f32{
-        2 / @intToFloat(f32, screen_size.x), 0,                                    0, -1,
-        0,                                   -2 / @intToFloat(f32, screen_size.y), 0, 1,
-        0,                                   0,                                    1, 0,
-        0,                                   0,                                    0, 1,
-    };
+const RenderBuffer = struct {
+    const NUM_ATTR = 5;
+    verts: [NUM_ATTR * 512]f32 = undefined,
+    vertIdx: usize,
+    indices: [2 * 3 * 512]platform.GLuint = undefined,
+    indIdx: usize,
 
+    fn init() RenderBuffer {
+        return .{
+            .vertIdx = 0,
+            .indIdx = 0,
+        };
+    }
+
+    fn pushVert(self: *RenderBuffer, x: f32, y: f32, color: platform.Color) usize {
+        const idx = self.vertIdx;
+        defer self.vertIdx += 1;
+
+        self.verts[idx * NUM_ATTR + 0] = x;
+        self.verts[idx * NUM_ATTR + 1] = y;
+        self.verts[idx * NUM_ATTR + 2] = @intToFloat(f32, color.r) / 255.0;
+        self.verts[idx * NUM_ATTR + 3] = @intToFloat(f32, color.g) / 255.0;
+        self.verts[idx * NUM_ATTR + 4] = @intToFloat(f32, color.b) / 255.0;
+        return idx;
+    }
+
+    fn pushElem(self: *RenderBuffer, vertIdx: usize) void {
+        self.indices[self.indIdx] = @intCast(platform.GLuint, vertIdx);
+        defer self.indIdx += 1;
+    }
+
+    fn pushRect(self: *RenderBuffer, pos: Vec2f, size: Vec2f, color: platform.Color, rot: f32) void {
+        const top_left = self.pushVert(pos.x - size.x / 2, pos.y - size.y / 2, color);
+        const top_right = self.pushVert(pos.x + size.x / 2, pos.y - size.y / 2, color);
+        const bot_left = self.pushVert(pos.x - size.x / 2, pos.y + size.y / 2, color);
+        const bot_right = self.pushVert(pos.x + size.x / 2, pos.y + size.y / 2, color);
+
+        self.pushElem(top_left);
+        self.pushElem(top_right);
+        self.pushElem(bot_right);
+
+        self.pushElem(top_left);
+        self.pushElem(bot_right);
+        self.pushElem(bot_left);
+    }
+
+    fn flush(self: *RenderBuffer) void {
+        const screen_size = platform.getScreenSize();
+        const projectionMatrix = [_]f32{
+            2 / @intToFloat(f32, screen_size.x), 0,                                    0, -1,
+            0,                                   -2 / @intToFloat(f32, screen_size.y), 0, 1,
+            0,                                   0,                                    1, 0,
+            0,                                   0,                                    0, 1,
+        };
+        platform.glUseProgram(shader_program);
+
+        platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
+        platform.glBufferData(platform.GL_ARRAY_BUFFER, self.verts.len * @sizeOf(f32), &self.verts, platform.GL_STATIC_DRAW);
+        platform.glBindBuffer(platform.GL_ELEMENT_ARRAY_BUFFER, ebo);
+        platform.glBufferData(platform.GL_ELEMENT_ARRAY_BUFFER, self.indices.len * @sizeOf(platform.GLuint), &self.indices, platform.GL_STATIC_DRAW);
+
+        platform.glUniformMatrix4fv(projectionMatrixUniformLocation, 1, platform.GL_FALSE, &projectionMatrix);
+
+        platform.glEnableVertexAttribArray(0);
+        platform.glEnableVertexAttribArray(1);
+
+        platform.glVertexAttribPointer(0, 2, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), null);
+        platform.glVertexAttribPointer(1, 3, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), @intToPtr(*c_void, 2 * @sizeOf(f32)));
+
+        platform.glDrawElements(platform.GL_TRIANGLES, self.indices.len, platform.GL_UNSIGNED_INT, null);
+    }
+};
+
+pub fn render(alpha: f64) void {
     platform.glClearColor(1, 1, 1, 1);
     platform.glClear(platform.GL_COLOR_BUFFER_BIT);
 
-    const r = @intToFloat(f32, SEGMENT_COLORS[0].r) / 255.0;
-    const g = @intToFloat(f32, SEGMENT_COLORS[0].g) / 255.0;
-    const b = @intToFloat(f32, SEGMENT_COLORS[0].b) / 255.0;
-    const verts = [_]platform.GLfloat{
-        head_segment.pos.x - 25, head_segment.pos.y - 25, r, g, b,
-        head_segment.pos.x + 25, head_segment.pos.y - 25, r, g, b,
-        head_segment.pos.x + 25, head_segment.pos.y + 25, r, g, b,
-        head_segment.pos.x - 25, head_segment.pos.y + 25, r, g, b,
-    };
-    const indices = [_]platform.GLuint{
-        0, 1, 2,
-        2, 3, 0,
-    };
-
-    platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
-    platform.glBufferData(platform.GL_ARRAY_BUFFER, verts.len * @sizeOf(f32), &verts, platform.GL_STATIC_DRAW);
-    platform.glBindBuffer(platform.GL_ELEMENT_ARRAY_BUFFER, ebo);
-    platform.glBufferData(platform.GL_ELEMENT_ARRAY_BUFFER, indices.len * @sizeOf(platform.GLuint), &indices, platform.GL_STATIC_DRAW);
-
-    platform.glUniformMatrix4fv(projectionMatrixUniformLocation, 1, platform.GL_FALSE, &projectionMatrix);
-
-    platform.glEnableVertexAttribArray(0);
-    platform.glEnableVertexAttribArray(1);
-
-    platform.glVertexAttribPointer(0, 2, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), null);
-    platform.glVertexAttribPointer(1, 3, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), @intToPtr(*c_void, 2 * @sizeOf(f32)));
-
-    platform.glUseProgram(shader_program);
-
-    platform.glDrawElements(platform.GL_TRIANGLES, 6, platform.GL_UNSIGNED_INT, null);
+    var render_buffer = RenderBuffer.init();
+    render_buffer.pushRect(head_segment.pos, .{ .x = 50, .y = 50 }, SEGMENT_COLORS[0], 0);
+    render_buffer.flush();
 
     //    var idx: usize = 0;
     //    while (segments[idx]) |segment| {
