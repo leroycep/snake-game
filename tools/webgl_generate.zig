@@ -166,14 +166,14 @@ const funcs = [_]Func{
         .args = &[_]Arg{
             .{ .name = "type", .type = "c_uint" },
             .{ .name = "count", .type = "c_uint" },
-            .{ .name = "data_ptr", .type = "[*c]const f32" },
+            .{ .name = "data_ptr", .type = "*const c_void" },
             .{ .name = "draw_type", .type = "c_uint" },
         },
         .ret = "void",
         .js =
         // TODO - check for NULL?
-        \\const floats = new Float32Array(getMemory().buffer, data_ptr, count);
-            \\gl.bufferData(type, floats, draw_type);
+        \\const bytes = new Uint8Array(getMemory().buffer, data_ptr, count);
+            \\gl.bufferData(type, bytes, draw_type);
             },
     // TODO - glBufferSubData
     Func{
@@ -361,7 +361,18 @@ const funcs = [_]Func{
         .js =
             \\gl.drawArrays(type, offset, count);
             },
-    // TODO - glDrawElements
+    Func{
+        .name = "glDrawElements",
+        .args = &[_]Arg{
+            .{ .name = "mode", .type = "GLenum" },
+            .{ .name = "count", .type = "GLsizei" },
+            .{ .name = "type", .type = "GLenum" },
+            .{ .name = "offset", .type = "?*const c_void" },
+        },
+        .ret = "void",
+        .js =
+            \\gl.drawElements(mode, count, type, offset);
+            },
     Func{
         .name = "glEnable",
         .args = &[_]Arg{

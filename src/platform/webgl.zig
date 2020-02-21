@@ -3,6 +3,7 @@
 pub const GL_VERTEX_SHADER = 35633;
 pub const GL_FRAGMENT_SHADER = 35632;
 pub const GL_ARRAY_BUFFER = 34962;
+pub const GL_ELEMENT_ARRAY_BUFFER = 0x8893;
 pub const GL_TRIANGLES = 4;
 pub const GL_TRIANGLE_STRIP = 5;
 pub const GL_STATIC_DRAW = 35044;
@@ -41,3 +42,7 @@ pub const GL_FRAMEBUFFER_COMPLETE = 0x8CD5;
 pub const GL_CULL_FACE = 0x0B44;
 pub const GL_CCW = 0x0901;
 pub const GL_STREAM_DRAW = 0x88E0;
+
+// Data Types
+pub const GL_UNSIGNED_SHORT = 0x1403;
+pub const GL_UNSIGNED_INT = 0x1405;
