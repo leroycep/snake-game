@@ -16,7 +16,6 @@ var tail_segment = Segment{
 };
 var frames: usize = 0;
 var shader_program: platform.GLuint = undefined;
-var vao: platform.GLuint = undefined;
 var vbo: platform.GLuint = undefined;
 
 const Segment = struct {
@@ -32,12 +31,8 @@ pub fn onInit() void {
         addSegment();
     }
 
-    platform.glEnable(platform.GL_DEBUG_OUTPUT);
-    platform.glDebugMessageCallback(glErrCallback, null);
-    platform.glDisable(platform.GL_CULL_FACE);
-
-    platform.glGenBuffers(1, &vbo);
-    platform.glGenVertexArrays(1, &vao);
+    vbo = platform.glCreateBuffer();
+    //vao = platform.glCreateVertexArrays();
 
     const vShaderSrc =
         \\ #version 300 es
@@ -60,28 +55,27 @@ pub fn onInit() void {
     ;
 
     const vShader = platform.glCreateShader(platform.GL_VERTEX_SHADER);
-    platform.glShaderSource(vShader, 1, &(vShaderSrc[0..].ptr), null);
+    platform.setShaderSource(vShader, vShaderSrc);
     platform.glCompileShader(vShader);
     defer platform.glDeleteShader(vShader);
 
-    var success: c_int = undefined;
-    platform.glGetShaderiv(vShader, platform.GL_COMPILE_STATUS, &success);
-    if (success == 0) {
+    if (!platform.getShaderCompileStatus(vShader)) {
         var infoLog: [512]u8 = [_]u8{0} ** 512;
-        platform.glGetShaderInfoLog(vShader, infoLog.len, null, &infoLog);
-        platform.warn("Error compiling vertex shader: {s}", .{infoLog});
+        var infoLen: platform.GLsizei = 0;
+        platform.glGetShaderInfoLog(vShader, infoLog.len, &infoLen, &infoLog);
+        platform.warn("Error compiling vertex shader: {s}", .{infoLog[0..@intCast(usize, infoLen)]});
     }
 
     const fShader = platform.glCreateShader(platform.GL_FRAGMENT_SHADER);
-    platform.glShaderSource(fShader, 1, &(fShaderSrc[0..].ptr), null);
+    platform.setShaderSource(fShader, fShaderSrc);
     platform.glCompileShader(fShader);
     defer platform.glDeleteShader(fShader);
 
-    platform.glGetShaderiv(fShader, platform.GL_COMPILE_STATUS, &success);
-    if (success == 0) {
+    if (!platform.getShaderCompileStatus(vShader)) {
         var infoLog: [512]u8 = [_]u8{0} ** 512;
-        platform.glGetShaderInfoLog(fShader, infoLog.len, null, &infoLog);
-        platform.warn("Error compiling fragment shader: {s}", .{infoLog});
+        var infoLen: platform.GLsizei = 0;
+        platform.glGetShaderInfoLog(fShader, infoLog.len, &infoLen, &infoLog);
+        platform.warn("Error compiling fragment shader: {}", .{infoLog[0..@intCast(usize, infoLen)]});
     }
 
     shader_program = platform.glCreateProgram();
@@ -89,17 +83,12 @@ pub fn onInit() void {
     platform.glAttachShader(shader_program, fShader);
     platform.glLinkProgram(shader_program);
 
-    platform.glGetProgramiv(shader_program, platform.GL_LINK_STATUS, &success);
-    if (success == 0) {
+    if (!platform.getProgramLinkStatus(shader_program)) {
         var infoLog: [512]u8 = [_]u8{0} ** 512;
-        platform.glGetProgramInfoLog(shader_program, infoLog.len, null, &infoLog);
-        platform.warn("Error linking shader program: {s}", .{infoLog});
+        var infoLen: platform.GLsizei = 0;
+        platform.glGetProgramInfoLog(shader_program, infoLog.len, &infoLen, &infoLog);
+        platform.warn("Error linking shader program: {s}", .{infoLog[0..@intCast(usize, infoLen)]});
     }
-}
-
-export fn glErrCallback(src: c_uint, errType: c_uint, id: c_uint, severity: c_uint, length: c_int, message: ?[*:0]const u8, userParam: ?*const c_void) void {
-    const typeMsg = if (errType == platform.GL_DEBUG_TYPE_ERROR) "** GL Error **" else "";
-    platform.warn("GL_CALLBACK: {} type = 0x{x}, severity = 0x{x}, message = {s}\n", .{ typeMsg, errType, severity, message });
 }
 
 pub fn onEvent(event: platform.Event) void {
@@ -159,9 +148,6 @@ pub fn update(current_time: f64, delta: f64) void {
 }
 
 pub fn render(alpha: f64) void {
-    const screen_size = platform.getScreenSize();
-    //platform.glViewport(0, 0, screen_size.x, screen_size.y);
-
     platform.glClearColor(1, 1, 1, 1);
     platform.glClear(platform.GL_COLOR_BUFFER_BIT);
 
@@ -174,15 +160,14 @@ pub fn render(alpha: f64) void {
         -1, 0, r, g, b,
     };
 
-    platform.glBindVertexArray(vao);
     platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
     platform.glBufferData(platform.GL_ARRAY_BUFFER, verts.len * @sizeOf(f32), &verts, platform.GL_STATIC_DRAW);
 
-    platform.glVertexAttribPointer(0, 2, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), null);
     platform.glEnableVertexAttribArray(0);
-
-    platform.glVertexAttribPointer(1, 3, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), @intToPtr(*c_void, 2 * @sizeOf(f32)));
     platform.glEnableVertexAttribArray(1);
+
+    platform.glVertexAttribPointer(0, 2, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), null);
+    platform.glVertexAttribPointer(1, 3, platform.GL_FLOAT, platform.GL_FALSE, 5 * @sizeOf(f32), @intToPtr(*c_void, 2 * @sizeOf(f32)));
 
     platform.glUseProgram(shader_program);
 

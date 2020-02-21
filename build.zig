@@ -19,6 +19,7 @@ pub fn build(b: *Builder) void {
     run_cmd.step.dependOn(b.getInstallStep());
 
     const wasm = b.addStaticLibrary("snake-game", "src/main_web.zig");
+    wasm.step.dependOn(&b.addExecutable("webgl_generate", "tools/webgl_generate.zig").run().step);
     const wasmOutDir = b.fmt("{}" ++ sep_str ++ SITE_DIR, .{b.install_prefix});
     wasm.setOutputDir(wasmOutDir);
     wasm.setBuildMode(b.standardReleaseOptions());

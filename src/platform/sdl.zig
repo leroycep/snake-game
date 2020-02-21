@@ -47,10 +47,15 @@ pub fn init(screenWidth: i32, screenHeight: i32) void {
     if (glad.gladLoadGL() != 1) {
         panic("Failed to initialize GLAD\n", .{});
     }
-    //    if (c.TTF_Init() < 0) {
-    //        return error.CouldntInitTTF;
-    //    }
-    //    defer c.TTF_Quit();
+
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(glErrCallback, null);
+    glDisable(GL_CULL_FACE);
+}
+
+fn glErrCallback(src: c_uint, errType: c_uint, id: c_uint, severity: c_uint, length: c_int, message: ?[*:0]const u8, userParam: ?*const c_void) callconv(.C) void {
+    const typeMsg = if (errType == GL_DEBUG_TYPE_ERROR) "** GL Error **" else "";
+    std.debug.warn("GL_CALLBACK: {} type = 0x{x}, severity = 0x{x}, message = {s}\n", .{ typeMsg, errType, severity, message });
 }
 
 pub fn deinit() void {
@@ -62,6 +67,28 @@ pub fn deinit() void {
 pub fn sdlAssertZero(ret: c_int) void {
     if (ret == 0) return;
     panic("sdl function returned an error: {s}\n", .{c.SDL_GetError()});
+}
+
+pub fn glCreateBuffer() GLuint {
+    var buffer: GLuint = undefined;
+    glGenBuffers(1, &buffer);
+    return buffer;
+}
+
+pub fn setShaderSource(shader: GLuint, src: []const u8) void {
+    glShaderSource(shader, 1, &(src.ptr), &@intCast(c_int, src.len));
+}
+
+pub fn getShaderCompileStatus(shader: GLuint) bool {
+    var success: GLint = undefined;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    return success == 0;
+}
+
+pub fn getProgramLinkStatus(program: GLuint) bool {
+    var success: GLint = undefined;
+    glGetProgramiv(program, GL_COMPILE_STATUS, &success);
+    return success == 0;
 }
 
 pub fn renderPresent() void {
