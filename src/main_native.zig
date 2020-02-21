@@ -42,6 +42,5 @@ pub fn main() !void {
         const alpha = accumulator / TICK_DELTA;
 
         app.render(alpha);
-        platform.renderPresent();
     }
 }

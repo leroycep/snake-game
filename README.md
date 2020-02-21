@@ -35,3 +35,7 @@ And in this case, I would navigate to `http://127.0.0.1:35729`.
 
 We need this server because web browsers will not run WASM unless it is served
 from a server with the appropriate mime type.
+
+## Notes
+
+WebGL bindings generator was based on the generator in [oxid](https://github.com/dbandstra/oxid/).

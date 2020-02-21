@@ -1,3 +1,5 @@
+const math = @import("std").math;
+
 pub const Color = struct { r: u8, g: u8, b: u8 };
 pub const Vec2 = struct { x: i32, y: i32 };
 pub const Vec2f = struct {
@@ -36,11 +38,20 @@ pub const Vec2f = struct {
     pub fn magnitude(self: *const Vec2f) f32 {
         return @sqrt(self.x * self.x + self.y * self.y);
     }
+
+    pub fn rotate(self: *const Vec2f, radians: f32) Vec2f {
+        return .{
+            .x = self.x * math.cos(radians) - self.y * math.sin(radians),
+            .y = self.y * math.cos(radians) + self.x * math.sin(radians),
+        };
+    }
 };
 pub const Rect = struct { x: i32, y: i32, w: i32, h: i32 };
 
 pub const EventTag = enum {
     Quit,
+
+    ScreenResized,
 
     KeyDown,
     KeyUp,
@@ -55,6 +66,8 @@ pub const EventTag = enum {
 
 pub const Event = union(enum) {
     Quit: void,
+
+    ScreenResized: Vec2,
 
     KeyDown: KeyEvent,
     KeyUp: KeyEvent,

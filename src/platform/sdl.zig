@@ -2,11 +2,15 @@ const std = @import("std");
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
 });
+const glad = @cImport({
+    @cInclude("glad/glad.h");
+});
 const panic = std.debug.panic;
 usingnamespace @import("common.zig");
+pub usingnamespace glad;
 
 var window: ?*c.SDL_Window = null;
-var renderer: ?*c.SDL_Renderer = null;
+var context: ?c.SDL_GLContext = null;
 
 pub const Error = error{
     InitFailed,
@@ -29,74 +33,72 @@ pub fn init(screenWidth: i32, screenHeight: i32) void {
         panic("SDL_Init failed: {c}\n", .{c.SDL_GetError()});
     }
 
-    window = c.SDL_CreateWindow("Dodger", c.SDL_WINDOWPOS_UNDEFINED_MASK, c.SDL_WINDOWPOS_UNDEFINED_MASK, screenWidth, screenHeight, c.SDL_WINDOW_SHOWN) orelse {
+    sdlAssertZero(c.SDL_GL_SetAttribute(.SDL_GL_CONTEXT_PROFILE_MASK, c.SDL_GL_CONTEXT_PROFILE_ES));
+    sdlAssertZero(c.SDL_GL_SetAttribute(.SDL_GL_CONTEXT_MAJOR_VERSION, 3));
+    sdlAssertZero(c.SDL_GL_SetAttribute(.SDL_GL_CONTEXT_MINOR_VERSION, 0));
+
+    window = c.SDL_CreateWindow("Dodger", c.SDL_WINDOWPOS_UNDEFINED_MASK, c.SDL_WINDOWPOS_UNDEFINED_MASK, screenWidth, screenHeight, c.SDL_WINDOW_SHOWN | c.SDL_WINDOW_OPENGL | c.SDL_WINDOW_RESIZABLE) orelse {
         panic("SDL_CreateWindow failed: {c}\n", .{c.SDL_GetError()});
     };
 
-    renderer = c.SDL_CreateRenderer(window, -1, 0) orelse {
-        panic("SDL_CreateRenderer failed: {c}\n", .{c.SDL_GetError()});
-    };
+    context = c.SDL_GL_CreateContext(window);
+    sdlAssertZero(c.SDL_GL_SetSwapInterval(1));
 
-    //    if (c.TTF_Init() < 0) {
-    //        return error.CouldntInitTTF;
-    //    }
-    //    defer c.TTF_Quit();
+    if (glad.gladLoadGL() != 1) {
+        panic("Failed to initialize GLAD\n", .{});
+    }
 
-    c.SDL_Delay(1000);
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(glErrCallback, null);
+    glDisable(GL_CULL_FACE);
+}
+
+fn glErrCallback(src: c_uint, errType: c_uint, id: c_uint, severity: c_uint, length: c_int, message: ?[*:0]const u8, userParam: ?*const c_void) callconv(.C) void {
+    const typeMsg = if (errType == GL_DEBUG_TYPE_ERROR) "** GL Error **" else "";
+    std.debug.warn("GL_CALLBACK: {} type = 0x{x}, severity = 0x{x}, message = {s}\n", .{ typeMsg, errType, severity, message });
 }
 
 pub fn deinit() void {
     defer c.SDL_Quit();
     defer c.SDL_DestroyWindow(window.?);
-    defer c.SDL_DestroyRenderer(renderer);
+    defer if (context) |ctx| c.SDL_GL_DeleteContext(ctx);
 }
 
 pub fn sdlAssertZero(ret: c_int) void {
     if (ret == 0) return;
-    panic("sdl function returned an error: {c}\n", .{c.SDL_GetError()});
+    panic("sdl function returned an error: {s}\n", .{c.SDL_GetError()});
 }
 
-pub fn clearRect(x: i32, y: i32, width: i32, height: i32) void {
-    var r: u8 = 0;
-    var g: u8 = 0;
-    var b: u8 = 0;
-    var a: u8 = 0;
-    sdlAssertZero(c.SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a));
-
-    sdlAssertZero(c.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0));
-    var rect = c.SDL_Rect{
-        .x = x,
-        .y = y,
-        .w = width,
-        .h = height,
-    };
-    sdlAssertZero(c.SDL_RenderFillRect(renderer, &rect));
-
-    sdlAssertZero(c.SDL_SetRenderDrawColor(renderer, r, g, b, a));
+pub fn glCreateBuffer() GLuint {
+    var buffer: GLuint = undefined;
+    glGenBuffers(1, &buffer);
+    return buffer;
 }
 
-pub fn setFillStyle(r: u8, g: u8, b: u8) void {
-    sdlAssertZero(c.SDL_SetRenderDrawColor(renderer, r, g, b, 255));
+pub fn setShaderSource(shader: GLuint, src: []const u8) void {
+    glShaderSource(shader, 1, &(src.ptr), &@intCast(c_int, src.len));
 }
 
-pub fn fillRect(x: i32, y: i32, width: i32, height: i32) void {
-    var rect = c.SDL_Rect{
-        .x = x,
-        .y = y,
-        .w = width,
-        .h = height,
-    };
-    sdlAssertZero(c.SDL_RenderFillRect(renderer, &rect));
+pub fn getShaderCompileStatus(shader: GLuint) bool {
+    var success: GLint = undefined;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    return success == GL_TRUE;
+}
+
+pub fn getProgramLinkStatus(program: GLuint) bool {
+    var success: GLint = undefined;
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+    return success == GL_TRUE;
+}
+
+pub fn renderPresent() void {
+    c.SDL_GL_SwapWindow(window);
 }
 
 pub fn getScreenSize() Vec2 {
     var rect = Vec2{ .x = 0, .y = 0 };
-    sdlAssertZero(c.SDL_GetRendererOutputSize(renderer, &rect.x, &rect.y));
+    c.SDL_GL_GetDrawableSize(window, &rect.x, &rect.y);
     return rect;
-}
-
-pub fn renderPresent() void {
-    c.SDL_RenderPresent(renderer);
 }
 
 pub fn pollEvent() ?Event {
@@ -114,7 +116,10 @@ pub fn sdlToCommonEvent(sdlEvent: c.SDL_Event) ?Event {
         c.SDL_QUIT => return Event{ .Quit = {} },
 
         // Window events
-        c.SDL_WINDOWEVENT => return null,
+        c.SDL_WINDOWEVENT => switch (sdlEvent.window.event) {
+            c.SDL_WINDOWEVENT_RESIZED => return Event{ .ScreenResized = .{ .x = sdlEvent.window.data1, .y = sdlEvent.window.data2 } },
+            else => return null,
+        },
         c.SDL_SYSWMEVENT => return null,
 
         // Keyboard events

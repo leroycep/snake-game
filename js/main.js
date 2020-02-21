@@ -1,9 +1,10 @@
-import canvas from "./canvas.js";
+import getWebGLEnv from "./webgl.js";
 
+let canvas = document.getElementById("canvas-webgl");
 var memory;
 
 let env = {
-  ...canvas,
+  ...getWebGLEnv(canvas, () => memory),
   consoleLogS: (ptr, len) => {
     const bytes = new Uint8Array(memory.buffer, ptr, len);
     let s = "";
@@ -72,10 +73,19 @@ fetch("snake-game.wasm")
       }
     }
 
-    canvas.element.addEventListener("mousemove", ev => {
-      const rect = canvas.element.getBoundingClientRect();
+    canvas.addEventListener("mousemove", ev => {
+      const rect = canvas.getBoundingClientRect();
       instance.exports.onMouseMove(ev.x - rect.left, ev.y - rect.top);
     });
+
+    const onResize = () => {
+      canvas.width = window.innerWidth - 0.02 * window.innerWidth;
+      canvas.height = window.innerHeight - 0.04 * window.innerHeight;
+      instance.exports.onResize();
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    new ResizeObserver(onResize).observe(document.body);
 
     window.requestAnimationFrame(step);
   });
