@@ -165,7 +165,7 @@ const funcs = [_]Func{
         .name = "glBufferData",
         .args = &[_]Arg{
             .{ .name = "type", .type = "c_uint" },
-            .{ .name = "count", .type = "c_uint" },
+            .{ .name = "count", .type = "c_long" },
             .{ .name = "data_ptr", .type = "*const c_void" },
             .{ .name = "draw_type", .type = "c_uint" },
         },

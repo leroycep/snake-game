@@ -37,7 +37,7 @@ pub fn init(screenWidth: i32, screenHeight: i32) void {
     sdlAssertZero(c.SDL_GL_SetAttribute(.SDL_GL_CONTEXT_MAJOR_VERSION, 3));
     sdlAssertZero(c.SDL_GL_SetAttribute(.SDL_GL_CONTEXT_MINOR_VERSION, 0));
 
-    window = c.SDL_CreateWindow("Dodger", c.SDL_WINDOWPOS_UNDEFINED_MASK, c.SDL_WINDOWPOS_UNDEFINED_MASK, screenWidth, screenHeight, c.SDL_WINDOW_SHOWN | c.SDL_WINDOW_OPENGL) orelse {
+    window = c.SDL_CreateWindow("Dodger", c.SDL_WINDOWPOS_UNDEFINED_MASK, c.SDL_WINDOWPOS_UNDEFINED_MASK, screenWidth, screenHeight, c.SDL_WINDOW_SHOWN | c.SDL_WINDOW_OPENGL | c.SDL_WINDOW_RESIZABLE) orelse {
         panic("SDL_CreateWindow failed: {c}\n", .{c.SDL_GetError()});
     };
 
@@ -116,7 +116,10 @@ pub fn sdlToCommonEvent(sdlEvent: c.SDL_Event) ?Event {
         c.SDL_QUIT => return Event{ .Quit = {} },
 
         // Window events
-        c.SDL_WINDOWEVENT => return null,
+        c.SDL_WINDOWEVENT => switch (sdlEvent.window.event) {
+            c.SDL_WINDOWEVENT_RESIZED => return Event{ .ScreenResized = .{ .x = sdlEvent.window.data1, .y = sdlEvent.window.data2 } },
+            else => return null,
+        },
         c.SDL_SYSWMEVENT => return null,
 
         // Keyboard events

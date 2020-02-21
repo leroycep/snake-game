@@ -51,6 +51,8 @@ pub const Rect = struct { x: i32, y: i32, w: i32, h: i32 };
 pub const EventTag = enum {
     Quit,
 
+    ScreenResized,
+
     KeyDown,
     KeyUp,
     TextEditing,
@@ -64,6 +66,8 @@ pub const EventTag = enum {
 
 pub const Event = union(enum) {
     Quit: void,
+
+    ScreenResized: Vec2,
 
     KeyDown: KeyEvent,
     KeyUp: KeyEvent,

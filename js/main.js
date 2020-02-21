@@ -2,10 +2,9 @@ import getWebGLEnv from "./webgl.js";
 
 let canvas = document.getElementById("canvas-webgl");
 var memory;
-var jsStringReturn;
 
 let env = {
-  ...getWebGLEnv(canvas, () => memory, () => jsStringReturn),
+  ...getWebGLEnv(canvas, () => memory),
   consoleLogS: (ptr, len) => {
     const bytes = new Uint8Array(memory.buffer, ptr, len);
     let s = "";
@@ -22,7 +21,6 @@ fetch("snake-game.wasm")
   .then(results => results.instance)
   .then(instance => {
     memory = instance.exports.memory;
-    jsStringReturn = instance.exports._js_string_return;
     instance.exports.onInit();
 
     const SHOULD_QUIT = instance.exports.QUIT;
@@ -79,6 +77,15 @@ fetch("snake-game.wasm")
       const rect = canvas.getBoundingClientRect();
       instance.exports.onMouseMove(ev.x - rect.left, ev.y - rect.top);
     });
+
+    const onResize = () => {
+      canvas.width = window.innerWidth - 0.02 * window.innerWidth;
+      canvas.height = window.innerHeight - 0.04 * window.innerHeight;
+      instance.exports.onResize();
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    new ResizeObserver(onResize).observe(document.body);
 
     window.requestAnimationFrame(step);
   });

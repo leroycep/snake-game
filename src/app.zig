@@ -102,6 +102,7 @@ pub fn onInit() void {
 pub fn onEvent(event: platform.Event) void {
     switch (event) {
         .Quit => platform.quit(),
+        .ScreenResized => |screen_size| platform.glViewport(0, 0, screen_size.x, screen_size.y),
         .KeyDown => |ev| if (ev.scancode == .ESCAPE) {
             platform.quit();
         },
@@ -217,9 +218,9 @@ const RenderBuffer = struct {
         platform.glUseProgram(shader_program);
 
         platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
-        platform.glBufferData(platform.GL_ARRAY_BUFFER, self.vertIdx * NUM_ATTR * @sizeOf(f32), &self.verts, platform.GL_STATIC_DRAW);
+        platform.glBufferData(platform.GL_ARRAY_BUFFER, @intCast(c_long, self.vertIdx * NUM_ATTR * @sizeOf(f32)), &self.verts, platform.GL_STATIC_DRAW);
         platform.glBindBuffer(platform.GL_ELEMENT_ARRAY_BUFFER, ebo);
-        platform.glBufferData(platform.GL_ELEMENT_ARRAY_BUFFER, self.indIdx * @sizeOf(platform.GLushort), &self.indices, platform.GL_STATIC_DRAW);
+        platform.glBufferData(platform.GL_ELEMENT_ARRAY_BUFFER, @intCast(c_long, self.indIdx * @sizeOf(platform.GLushort)), &self.indices, platform.GL_STATIC_DRAW);
 
         platform.glUniformMatrix4fv(projectionMatrixUniformLocation, 1, platform.GL_FALSE, &projectionMatrix);
 

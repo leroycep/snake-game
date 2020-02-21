@@ -1,5 +1,6 @@
 const app = @import("app.zig");
 const constants = @import("constants.zig");
+const platform = @import("platform.zig");
 
 export const MAX_DELTA_SECONDS = constants.MAX_DELTA_SECONDS;
 export const TICK_DELTA_SECONDS = constants.TICK_DELTA_SECONDS;
@@ -14,6 +15,12 @@ export fn onMouseMove(x: i32, y: i32) void {
             .x = x,
             .y = y,
         },
+    });
+}
+
+export fn onResize() void {
+    app.onEvent(.{
+        .ScreenResized = platform.getScreenSize(),
     });
 }
 
