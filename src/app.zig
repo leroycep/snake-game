@@ -234,20 +234,18 @@ pub fn render(alpha: f64) void {
 
     var render_buffer = RenderBuffer.init();
     render_buffer.pushRect(head_segment.pos, .{ .x = 50, .y = 50 }, SEGMENT_COLORS[0], 0);
+
+    var idx: usize = 0;
+    while (segments[idx]) |segment| {
+        const color = SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len];
+
+        render_buffer.pushRect(segment.pos, .{ .x = SNAKE_SEGMENT_LENGTH, .y = 30 }, color, segment.dir);
+        idx += 1;
+    }
+    const color = SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len];
+    render_buffer.pushRect(tail_segment.pos, .{ .x = SNAKE_TAIL_LENGTH, .y = 20 }, color, tail_segment.dir);
+
     render_buffer.flush();
-
-    //    var idx: usize = 0;
-    //    while (segments[idx]) |segment| {
-    //        const color = SEGMENT_COLORS[(idx + 1) %  SEGMENT_COLORS.len];
-    //        platform.setFillStyle(color.r, color.g, color.b);
-    //
-    //        platform.fillRect2(@floatToInt(i32, segment.pos.x), @floatToInt(i32, segment.pos.y), SNAKE_SEGMENT_LENGTH, 30, segment.dir);
-    //        idx += 1;
-    //    }
-    //        const color = SEGMENT_COLORS[(idx + 1) %  SEGMENT_COLORS.len];
-    //    platform.setFillStyle(color.r, color.g, color.b);
-    //    platform.fillRect2(@floatToInt(i32, tail_segment.pos.x), @floatToInt(i32, tail_segment.pos.y), SNAKE_TAIL_LENGTH, 20, tail_segment.dir);
-
     platform.renderPresent();
 }
 
