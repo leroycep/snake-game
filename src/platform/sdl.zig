@@ -82,13 +82,13 @@ pub fn setShaderSource(shader: GLuint, src: []const u8) void {
 pub fn getShaderCompileStatus(shader: GLuint) bool {
     var success: GLint = undefined;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    return success == 0;
+    return success == GL_TRUE;
 }
 
 pub fn getProgramLinkStatus(program: GLuint) bool {
     var success: GLint = undefined;
-    glGetProgramiv(program, GL_COMPILE_STATUS, &success);
-    return success == 0;
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+    return success == GL_TRUE;
 }
 
 pub fn renderPresent() void {

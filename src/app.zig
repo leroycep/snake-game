@@ -17,6 +17,7 @@ var tail_segment = Segment{
 var frames: usize = 0;
 var shader_program: platform.GLuint = undefined;
 var vbo: platform.GLuint = undefined;
+var projectionMatrixUniformLocation: platform.GLint = undefined;
 
 const Segment = struct {
     pos: Vec2f,
@@ -38,10 +39,12 @@ pub fn onInit() void {
         \\ #version 300 es
         \\ layout(location = 0) in vec2 a_position;
         \\ layout(location = 1) in vec3 a_color;
+        \\ uniform mat4 projectionMatrix;
         \\ out vec3 v_color;
         \\ void main() {
         \\   v_color = a_color;
         \\   gl_Position = vec4(a_position.x, a_position.y, 0.0, 1.0);
+        \\   gl_Position *= projectionMatrix;
         \\ }
     ;
     const fShaderSrc =
@@ -63,7 +66,7 @@ pub fn onInit() void {
         var infoLog: [512]u8 = [_]u8{0} ** 512;
         var infoLen: platform.GLsizei = 0;
         platform.glGetShaderInfoLog(vShader, infoLog.len, &infoLen, &infoLog);
-        platform.warn("Error compiling vertex shader: {s}", .{infoLog[0..@intCast(usize, infoLen)]});
+        platform.warn("Error compiling vertex shader: {}\n", .{infoLog[0..@intCast(usize, infoLen)]});
     }
 
     const fShader = platform.glCreateShader(platform.GL_FRAGMENT_SHADER);
@@ -75,7 +78,7 @@ pub fn onInit() void {
         var infoLog: [512]u8 = [_]u8{0} ** 512;
         var infoLen: platform.GLsizei = 0;
         platform.glGetShaderInfoLog(fShader, infoLog.len, &infoLen, &infoLog);
-        platform.warn("Error compiling fragment shader: {}", .{infoLog[0..@intCast(usize, infoLen)]});
+        platform.warn("Error compiling fragment shader: {}\n", .{infoLog[0..@intCast(usize, infoLen)]});
     }
 
     shader_program = platform.glCreateProgram();
@@ -87,8 +90,11 @@ pub fn onInit() void {
         var infoLog: [512]u8 = [_]u8{0} ** 512;
         var infoLen: platform.GLsizei = 0;
         platform.glGetProgramInfoLog(shader_program, infoLog.len, &infoLen, &infoLog);
-        platform.warn("Error linking shader program: {s}", .{infoLog[0..@intCast(usize, infoLen)]});
+        platform.warn("Error linking shader program: {}\n", .{infoLog[0..@intCast(usize, infoLen)]});
     }
+
+    platform.glUseProgram(shader_program);
+    projectionMatrixUniformLocation = platform.glGetUniformLocation(shader_program, "projectionMatrix");
 }
 
 pub fn onEvent(event: platform.Event) void {
@@ -148,6 +154,13 @@ pub fn update(current_time: f64, delta: f64) void {
 }
 
 pub fn render(alpha: f64) void {
+    const screen_size = platform.getScreenSize();
+    const projectionMatrix = [_]f32{
+        2 / @intToFloat(f32, screen_size.x), 0,                                   0,  -1,
+        0,                                   2 / @intToFloat(f32, screen_size.y), 0,  -1,
+        0,                                   0,                                   -1, 0,
+        0,                                   0,                                   0,  1,
+    };
     platform.glClearColor(1, 1, 1, 1);
     platform.glClear(platform.GL_COLOR_BUFFER_BIT);
 
@@ -155,13 +168,15 @@ pub fn render(alpha: f64) void {
     const g = @intToFloat(f32, SEGMENT_COLORS[0].g) / 255.0;
     const b = @intToFloat(f32, SEGMENT_COLORS[0].b) / 255.0;
     const verts = [_]platform.GLfloat{
-        1,  0, r, g, b,
-        0,  1, r, g, b,
-        -1, 0, r, g, b,
+        100,  0,   r, g, b,
+        0,    100, r, g, b,
+        -100, 0,   r, g, b,
     };
 
     platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
     platform.glBufferData(platform.GL_ARRAY_BUFFER, verts.len * @sizeOf(f32), &verts, platform.GL_STATIC_DRAW);
+
+    platform.glUniformMatrix4fv(projectionMatrixUniformLocation, 1, platform.GL_FALSE, &projectionMatrix);
 
     platform.glEnableVertexAttribArray(0);
     platform.glEnableVertexAttribArray(1);
