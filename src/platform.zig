@@ -15,6 +15,10 @@ pub fn quit() void {
     shouldQuit = QUIT;
 }
 
+pub export fn hasQuit() bool {
+    return shouldQuit == QUIT;
+}
+
 pub const warn = if (builtin.arch == .wasm32)
     warnWeb
 else

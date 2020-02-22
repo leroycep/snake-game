@@ -63,19 +63,38 @@ fetch("snake-game.wasm")
 
       instance.exports.render(alpha);
 
-      const shouldQuit = new Uint8Array(
-        memory.buffer,
-        instance.exports.shouldQuit,
-        1
-      )[0];
-      if (shouldQuit !== SHOULD_QUIT) {
+      if (!instance.exports.hasQuit()) {
         window.requestAnimationFrame(step);
+      } else {
+          const quitLabel = document.createElement("p");
+          quitLabel.textContent = "You have quit, game is stopped. Refresh the page to restart the game.";
+          document.querySelector(".container").prepend(quitLabel);
       }
     }
+    window.requestAnimationFrame(step);
 
     canvas.addEventListener("mousemove", ev => {
       const rect = canvas.getBoundingClientRect();
       instance.exports.onMouseMove(ev.x - rect.left, ev.y - rect.top);
+    });
+
+    const ex = instance.exports;
+    const codeMap = {
+      KeyW: ex.SCANCODE_W,
+      KeyA: ex.SCANCODE_A,
+      KeyS: ex.SCANCODE_S,
+      KeyD: ex.SCANCODE_D,
+      Escape: ex.SCANCODE_ESCAPE
+    };
+    document.addEventListener("keydown", ev => {
+      if (ev.defaultPrevented) {
+        return;
+      }
+      const zigConst = codeMap[ev.code];
+      if (zigConst !== undefined) {
+        const zigCode = new Uint16Array(memory.buffer, zigConst, 1)[0];
+        instance.exports.onKeyDown(zigCode);
+      }
     });
 
     const onResize = () => {
@@ -86,6 +105,4 @@ fetch("snake-game.wasm")
     onResize();
     window.addEventListener("resize", onResize);
     new ResizeObserver(onResize).observe(document.body);
-
-    window.requestAnimationFrame(step);
   });
