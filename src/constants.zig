@@ -6,6 +6,7 @@ pub const TICK_DELTA_SECONDS: f64 = 16.0 / 1000.0;
 pub const VIEWPORT_WIDTH = 640;
 pub const VIEWPORT_HEIGHT = 480;
 
+pub const LEVEL_COLOR = Color{ .r = 0x58, .g = 0x83, .b = 0x30 };
 pub const LEVEL_WIDTH = 2500;
 pub const LEVEL_HEIGHT = 2500;
 
