@@ -4,7 +4,7 @@
 
 For building:
 
-- zig `0.5.0+ab4ea5d3c`
+- zig `0.5.0+907c5589a`
 
 For running the game:
 

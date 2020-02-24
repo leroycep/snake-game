@@ -1,6 +1,7 @@
 const std = @import("std");
 const Builder = std.build.Builder;
 const sep_str = std.fs.path.sep_str;
+const Cpu = std.Target.Cpu;
 
 const SITE_DIR = "www";
 
@@ -23,7 +24,7 @@ pub fn build(b: *Builder) void {
     const wasmOutDir = b.fmt("{}" ++ sep_str ++ SITE_DIR, .{b.install_prefix});
     wasm.setOutputDir(wasmOutDir);
     wasm.setBuildMode(b.standardReleaseOptions());
-    wasm.setTarget(.wasm32, .freestanding, .none);
+    wasm.setTheTarget(.{ .Cross = .{ .cpu = Cpu.baseline(.wasm32), .os = .freestanding, .abi = .none } });
 
     const htmlInstall = b.addInstallFile("./index.html", SITE_DIR ++ sep_str ++ "index.html");
     const cssInstall = b.addInstallFile("./index.css", SITE_DIR ++ sep_str ++ "index.css");
