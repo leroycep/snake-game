@@ -3,6 +3,7 @@ const platform = @import("platform.zig");
 usingnamespace @import("constants.zig");
 const Vec2f = platform.Vec2f;
 
+var camera_pos = Vec2f{ .x = 0, .y = 0 };
 var goto_pos = Vec2f{ .x = 0, .y = 0 };
 var head_segment = Segment{
     .pos = Vec2f{ .x = 100, .y = 100 },
@@ -103,13 +104,14 @@ pub fn onEvent(event: platform.Event) void {
     switch (event) {
         .Quit => platform.quit(),
         .ScreenResized => |screen_size| platform.glViewport(0, 0, screen_size.x, screen_size.y),
-        .KeyDown => |ev| if (ev.scancode == .ESCAPE) {
-            platform.quit();
+        .KeyDown => |ev| switch (ev.scancode) {
+            .ESCAPE => platform.quit(),
+            else => {},
         },
         .MouseMotion => |mouse_pos| {
             goto_pos = Vec2f{
-                .x = @intToFloat(f32, mouse_pos.x),
-                .y = @intToFloat(f32, mouse_pos.y),
+                .x = @intToFloat(f32, mouse_pos.x) + camera_pos.x,
+                .y = @intToFloat(f32, mouse_pos.y) + camera_pos.y,
             };
         },
         else => {},
@@ -127,6 +129,10 @@ pub fn update(current_time: f64, delta: f64) void {
         head_segment.dir = std.math.atan2(f32, head_dir.y, head_dir.x);
         head_segment.pos = head_segment.pos.add(&head_movement);
     }
+
+    // Make camera follow snake head
+    const screen_size = Vec2f.fromVeci(&platform.getScreenSize());
+    camera_pos = head_segment.pos.sub(&screen_size.scalMul(0.5));
 
     // Make segments trail head
     var segment_idx: usize = 0;
@@ -156,18 +162,42 @@ pub fn update(current_time: f64, delta: f64) void {
     frames += 1;
 }
 
+fn mulMat4(a: []const f32, b: []const f32) [16]f32 {
+    std.debug.assert(a.len == 16);
+    std.debug.assert(b.len == 16);
+
+    var c: [16]f32 = undefined;
+    comptime var i: usize = 0;
+    inline while (i < 4) : (i += 1) {
+        comptime var j: usize = 0;
+        inline while (j < 4) : (j += 1) {
+            c[i * 4 + j] = 0;
+            comptime var k: usize = 0;
+            inline while (k < 4) : (k += 1) {
+                c[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
+            }
+        }
+    }
+    return c;
+}
+
 const RenderBuffer = struct {
     const NUM_ATTR = 5;
     verts: [NUM_ATTR * 512]f32 = undefined,
     vertIdx: usize,
     indices: [2 * 3 * 512]platform.GLushort = undefined,
     indIdx: usize,
+    translation: Vec2f = Vec2f{ .x = 0, .y = 0 },
 
     fn init() RenderBuffer {
         return .{
             .vertIdx = 0,
             .indIdx = 0,
         };
+    }
+
+    fn setTranslation(self: *RenderBuffer, vec: Vec2f) void {
+        self.translation = vec;
     }
 
     fn pushVert(self: *RenderBuffer, pos: Vec2f, color: platform.Color) usize {
@@ -189,9 +219,9 @@ const RenderBuffer = struct {
 
     fn pushRect(self: *RenderBuffer, pos: Vec2f, size: Vec2f, color: platform.Color, rot: f32) void {
         const top_left = (Vec2f{ .x = -size.x / 2, .y = -size.y / 2 }).rotate(rot).add(&pos);
-        const top_right = (Vec2f{ .x =  size.x / 2, .y = -size.y / 2 }).rotate(rot).add(&pos);
-        const bot_left = (Vec2f{ .x = -size.x / 2, .y =  size.y / 2 }).rotate(rot).add(&pos);
-        const bot_right = (Vec2f{ .x =  size.x / 2, .y =  size.y / 2 }).rotate(rot).add(&pos);
+        const top_right = (Vec2f{ .x = size.x / 2, .y = -size.y / 2 }).rotate(rot).add(&pos);
+        const bot_left = (Vec2f{ .x = -size.x / 2, .y = size.y / 2 }).rotate(rot).add(&pos);
+        const bot_right = (Vec2f{ .x = size.x / 2, .y = size.y / 2 }).rotate(rot).add(&pos);
 
         const top_left_vert = self.pushVert(top_left, color);
         const top_right_vert = self.pushVert(top_right, color);
@@ -209,12 +239,19 @@ const RenderBuffer = struct {
 
     fn flush(self: *RenderBuffer) void {
         const screen_size = platform.getScreenSize();
-        const projectionMatrix = [_]f32{
+        const translationMatrix = [_]f32{
+            1, 0, 0, -self.translation.x,
+            0, 1, 0, -self.translation.y,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
+        };
+        const scalingMatrix = [_]f32{
             2 / @intToFloat(f32, screen_size.x), 0,                                    0, -1,
             0,                                   -2 / @intToFloat(f32, screen_size.y), 0, 1,
             0,                                   0,                                    1, 0,
             0,                                   0,                                    0, 1,
         };
+        const projectionMatrix = mulMat4(&scalingMatrix, &translationMatrix);
         platform.glUseProgram(shader_program);
 
         platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
@@ -239,6 +276,10 @@ pub fn render(alpha: f64) void {
     platform.glClear(platform.GL_COLOR_BUFFER_BIT);
 
     var render_buffer = RenderBuffer.init();
+    render_buffer.setTranslation(camera_pos);
+
+    render_buffer.pushRect(.{ .x = 0, .y = 0 }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
+
     render_buffer.pushRect(head_segment.pos, .{ .x = 50, .y = 50 }, SEGMENT_COLORS[0], head_segment.dir);
 
     var idx: usize = 0;

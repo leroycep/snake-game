@@ -6,11 +6,22 @@ pub const Vec2f = struct {
     x: f32,
     y: f32,
 
+    pub fn fromVeci(veci: *Vec2) Vec2f {
+        return .{
+            .x = @intToFloat(f32, veci.x),
+            .y = @intToFloat(f32, veci.y),
+        };
+    }
+
     pub fn scalMul(self: *const Vec2f, scal: f32) Vec2f {
         return Vec2f{
             .x = self.x * scal,
             .y = self.y * scal,
         };
+    }
+
+    pub fn dot(self: *const Vec2f, other: *const Vec2f) f32 {
+        return self.x * other.x + self.y * other.y;
     }
 
     pub fn add(self: *const Vec2f, other: *const Vec2f) Vec2f {
