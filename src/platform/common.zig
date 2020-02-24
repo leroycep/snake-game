@@ -6,7 +6,7 @@ pub const Vec2f = struct {
     x: f32,
     y: f32,
 
-    pub fn fromVeci(veci: *Vec2) Vec2f {
+    pub fn fromVeci(veci: *const Vec2) Vec2f {
         return .{
             .x = @intToFloat(f32, veci.x),
             .y = @intToFloat(f32, veci.y),
