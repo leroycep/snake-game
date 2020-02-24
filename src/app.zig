@@ -106,10 +106,6 @@ pub fn onEvent(event: platform.Event) void {
         .ScreenResized => |screen_size| platform.glViewport(0, 0, screen_size.x, screen_size.y),
         .KeyDown => |ev| switch (ev.scancode) {
             .ESCAPE => platform.quit(),
-            .W => camera_pos.y -= 30,
-            .A => camera_pos.x -= 30,
-            .S => camera_pos.y += 30,
-            .D => camera_pos.x += 30,
             else => {},
         },
         .MouseMotion => |mouse_pos| {
@@ -133,6 +129,10 @@ pub fn update(current_time: f64, delta: f64) void {
         head_segment.dir = std.math.atan2(f32, head_dir.y, head_dir.x);
         head_segment.pos = head_segment.pos.add(&head_movement);
     }
+
+    // Make camera follow snake head
+    const screen_size = Vec2f.fromVeci(&platform.getScreenSize());
+    camera_pos = head_segment.pos.sub(&screen_size.scalMul(0.5));
 
     // Make segments trail head
     var segment_idx: usize = 0;

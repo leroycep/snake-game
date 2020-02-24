@@ -11,7 +11,7 @@ pub const LEVEL_WIDTH = 2500;
 pub const LEVEL_HEIGHT = 2500;
 
 pub const MAX_SEGMENTS = 100;
-pub const SNAKE_SPEED = 250; // pixels / second
+pub const SNAKE_SPEED = 500; // pixels / second
 pub const SNAKE_SEGMENT_LENGTH = 50; // pixels / second
 pub const SNAKE_TAIL_LENGTH = 30; // pixels / second
 
