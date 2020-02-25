@@ -2,9 +2,10 @@ const std = @import("std");
 const platform = @import("platform.zig");
 usingnamespace @import("constants.zig");
 const Vec2f = platform.Vec2f;
+const pi = std.math.pi;
 
 var camera_pos = Vec2f{ .x = 0, .y = 0 };
-var head_dir = Vec2f{ .x = 0, .y = 0 };
+var target_head_dir: f32 = 0;
 var head_segment = Segment{
     .pos = Vec2f{ .x = 100, .y = 100 },
     .dir = 0,
@@ -112,8 +113,8 @@ pub fn onEvent(event: platform.Event) void {
             const mouse_pos_game = Vec2f.fromVeci(&mouse_pos_screen).add(&camera_pos);
             const head_offset = mouse_pos_game.sub(&head_segment.pos);
             if (head_offset.x != 0 and head_offset.y != 0) {
-                head_dir = head_offset.normalize();
-                head_segment.dir = std.math.atan2(f32, head_dir.y, head_dir.x);
+                const head_dir = head_offset.normalize();
+                target_head_dir = std.math.atan2(f32, head_dir.y, head_dir.x);
             }
         },
         else => {},
@@ -121,9 +122,19 @@ pub fn onEvent(event: platform.Event) void {
 }
 
 pub fn update(current_time: f64, delta: f64) void {
+    // Turn head
+    const angle_difference = @mod(((target_head_dir - head_segment.dir) + pi), 2 * pi) - pi;
+    const angle_change = std.math.clamp(angle_difference, @floatCast(f32, -SNAKE_TURN_SPEED * delta), @floatCast(f32, SNAKE_TURN_SPEED * delta));
+    head_segment.dir += angle_change;
+    if (head_segment.dir >= 2 * pi) {
+        head_segment.dir -= 2 * pi;
+    } else if (head_segment.dir < 0) {
+        head_segment.dir += 2 * pi;
+    }
+
     // Move head
     const head_speed = @floatCast(f32, SNAKE_SPEED * delta);
-    const head_movement = head_dir.scalMul(head_speed);
+    const head_movement = Vec2f.unitFromRad(head_segment.dir).scalMul(head_speed);
     head_segment.pos = head_segment.pos.add(&head_movement);
 
     // Make camera follow snake head

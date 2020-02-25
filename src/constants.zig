@@ -1,3 +1,4 @@
+const pi = @import("std").math.pi;
 const Color = @import("platform.zig").Color;
 
 pub const MAX_DELTA_SECONDS: f64 = 0.25;
@@ -12,6 +13,7 @@ pub const LEVEL_HEIGHT = 2500;
 
 pub const MAX_SEGMENTS = 100;
 pub const SNAKE_SPEED = 500; // pixels / second
+pub const SNAKE_TURN_SPEED = 1 * pi; // radians a second
 pub const SNAKE_SEGMENT_LENGTH = 50; // pixels / second
 pub const SNAKE_TAIL_LENGTH = 30; // pixels / second
 

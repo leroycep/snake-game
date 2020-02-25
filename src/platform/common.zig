@@ -13,6 +13,13 @@ pub const Vec2f = struct {
         };
     }
 
+    pub fn unitFromRad(radians: f32) Vec2f {
+        return .{
+            .x = math.cos(radians),
+            .y = math.sin(radians),
+        };
+    }
+
     pub fn scalMul(self: *const Vec2f, scal: f32) Vec2f {
         return Vec2f{
             .x = self.x * scal,
