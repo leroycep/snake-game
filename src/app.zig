@@ -296,10 +296,10 @@ const RenderBuffer = struct {
             0, 0, 0, 1,
         };
         const scalingMatrix = [_]f32{
-            2 / @intToFloat(f32, screen_size.x), 0,                                    0, -1,
-            0,                                   -2 / @intToFloat(f32, screen_size.y), 0, 1,
-            0,                                   0,                                    1, 0,
-            0,                                   0,                                    0, 1,
+            2 / @intToFloat(f32, screen_size.x * 2), 0,                                        0, -1,
+            0,                                       -2 / @intToFloat(f32, screen_size.y * 2), 0, 1,
+            0,                                       0,                                        1, 0,
+            0,                                       0,                                        0, 1,
         };
         const projectionMatrix = mulMat4(&scalingMatrix, &translationMatrix);
         platform.glUseProgram(shader_program);
