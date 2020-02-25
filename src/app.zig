@@ -141,7 +141,14 @@ pub fn onEvent(event: platform.Event) void {
 
 pub fn update(current_time: f64, delta: f64) void {
     // Update food
-    if (food_pos) |pos| {} else {
+    if (food_pos) |pos| {
+        // If the head is close to the fruit
+        if (pos.sub(&head_segment.pos).magnitude() < SNAKE_SEGMENT_LENGTH + 20) {
+            // Eat it
+            food_pos = null;
+            addSegment();
+        }
+    } else {
         food_pos = .{
             .x = random.random.float(f32) * LEVEL_WIDTH - LEVEL_WIDTH / 2,
             .y = random.random.float(f32) * LEVEL_HEIGHT - LEVEL_HEIGHT / 2,
