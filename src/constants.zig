@@ -13,7 +13,7 @@ pub const LEVEL_HEIGHT = 2500;
 
 pub const MAX_SEGMENTS = 100;
 pub const SNAKE_SPEED = 500; // pixels / second
-pub const SNAKE_TURN_SPEED = 2 * pi; // radians a second
+pub const SNAKE_TURN_SPEED = 2.5 * pi; // radians a second
 pub const SNAKE_SEGMENT_LENGTH = 50; // pixels / second
 pub const SNAKE_TAIL_LENGTH = 30; // pixels / second
 

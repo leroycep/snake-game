@@ -163,16 +163,16 @@ pub fn update(current_time: f64, delta: f64) void {
     if (inputs.west) target_head_dir_vec.x -= 1;
     if (target_head_dir_vec.x != 0 or target_head_dir_vec.y != 0) {
         target_head_dir = std.math.atan2(f32, target_head_dir_vec.y, target_head_dir_vec.x);
+    }
 
-        // Turn head
-        const angle_difference = @mod(((target_head_dir - head_segment.dir) + pi), 2 * pi) - pi;
-        const angle_change = std.math.clamp(angle_difference, @floatCast(f32, -SNAKE_TURN_SPEED * delta), @floatCast(f32, SNAKE_TURN_SPEED * delta));
-        head_segment.dir += angle_change;
-        if (head_segment.dir >= 2 * pi) {
-            head_segment.dir -= 2 * pi;
-        } else if (head_segment.dir < 0) {
-            head_segment.dir += 2 * pi;
-        }
+    // Turn head
+    const angle_difference = @mod(((target_head_dir - head_segment.dir) + pi), 2 * pi) - pi;
+    const angle_change = std.math.clamp(angle_difference, @floatCast(f32, -SNAKE_TURN_SPEED * delta), @floatCast(f32, SNAKE_TURN_SPEED * delta));
+    head_segment.dir += angle_change;
+    if (head_segment.dir >= 2 * pi) {
+        head_segment.dir -= 2 * pi;
+    } else if (head_segment.dir < 0) {
+        head_segment.dir += 2 * pi;
     }
 
     // Move head
