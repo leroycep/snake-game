@@ -84,6 +84,10 @@ fetch("snake-game.wasm")
       KeyA: ex.SCANCODE_A,
       KeyS: ex.SCANCODE_S,
       KeyD: ex.SCANCODE_D,
+      ArrowLeft: ex.SCANCODE_LEFT,
+      ArrowRight: ex.SCANCODE_RIGHT,
+      ArrowUp: ex.SCANCODE_UP,
+      ArrowDown: ex.SCANCODE_DOWN,
       Escape: ex.SCANCODE_ESCAPE
     };
     document.addEventListener("keydown", ev => {
@@ -94,6 +98,17 @@ fetch("snake-game.wasm")
       if (zigConst !== undefined) {
         const zigCode = new Uint16Array(memory.buffer, zigConst, 1)[0];
         instance.exports.onKeyDown(zigCode);
+      }
+    });
+
+    document.addEventListener("keyup", ev => {
+      if (ev.defaultPrevented) {
+        return;
+      }
+      const zigConst = codeMap[ev.code];
+      if (zigConst !== undefined) {
+        const zigCode = new Uint16Array(memory.buffer, zigConst, 1)[0];
+        instance.exports.onKeyUp(zigCode);
       }
     });
 

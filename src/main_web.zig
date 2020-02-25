@@ -7,6 +7,10 @@ export const SCANCODE_W = @enumToInt(platform.Scancode.W);
 export const SCANCODE_A = @enumToInt(platform.Scancode.A);
 export const SCANCODE_S = @enumToInt(platform.Scancode.S);
 export const SCANCODE_D = @enumToInt(platform.Scancode.D);
+export const SCANCODE_LEFT = @enumToInt(platform.Scancode.LEFT);
+export const SCANCODE_RIGHT = @enumToInt(platform.Scancode.RIGHT);
+export const SCANCODE_UP = @enumToInt(platform.Scancode.UP);
+export const SCANCODE_DOWN = @enumToInt(platform.Scancode.DOWN);
 
 export const MAX_DELTA_SECONDS = constants.MAX_DELTA_SECONDS;
 export const TICK_DELTA_SECONDS = constants.TICK_DELTA_SECONDS;
@@ -27,6 +31,14 @@ export fn onMouseMove(x: i32, y: i32) void {
 export fn onKeyDown(scancode: u16) void {
     app.onEvent(.{
         .KeyDown = .{
+            .scancode = @intToEnum(platform.Scancode, scancode),
+        },
+    });
+}
+
+export fn onKeyUp(scancode: u16) void {
+    app.onEvent(.{
+        .KeyUp = .{
             .scancode = @intToEnum(platform.Scancode, scancode),
         },
     });
