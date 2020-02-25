@@ -22,6 +22,16 @@ var vbo: platform.GLuint = undefined;
 var ebo: platform.GLuint = undefined;
 var projectionMatrixUniformLocation: platform.GLint = undefined;
 
+var inputs = Inputs{};
+
+/// Keep track of D-Pad status
+const Inputs = struct {
+    north: bool = false,
+    east: bool = false,
+    south: bool = false,
+    west: bool = false,
+};
+
 const Segment = struct {
     pos: Vec2f,
 
@@ -107,29 +117,42 @@ pub fn onEvent(event: platform.Event) void {
         .ScreenResized => |screen_size| platform.glViewport(0, 0, screen_size.x, screen_size.y),
         .KeyDown => |ev| switch (ev.scancode) {
             .ESCAPE => platform.quit(),
+            .UP => inputs.north = true,
+            .RIGHT => inputs.east = true,
+            .DOWN => inputs.south = true,
+            .LEFT => inputs.west = true,
             else => {},
         },
-        .MouseMotion => |mouse_pos_screen| {
-            const mouse_pos_game = Vec2f.fromVeci(&mouse_pos_screen).add(&camera_pos);
-            const head_offset = mouse_pos_game.sub(&head_segment.pos);
-            if (head_offset.x != 0 and head_offset.y != 0) {
-                const head_dir = head_offset.normalize();
-                target_head_dir = std.math.atan2(f32, head_dir.y, head_dir.x);
-            }
+        .KeyUp => |ev| switch (ev.scancode) {
+            .UP => inputs.north = false,
+            .RIGHT => inputs.east = false,
+            .DOWN => inputs.south = false,
+            .LEFT => inputs.west = false,
+            else => {},
         },
         else => {},
     }
 }
 
 pub fn update(current_time: f64, delta: f64) void {
-    // Turn head
-    const angle_difference = @mod(((target_head_dir - head_segment.dir) + pi), 2 * pi) - pi;
-    const angle_change = std.math.clamp(angle_difference, @floatCast(f32, -SNAKE_TURN_SPEED * delta), @floatCast(f32, SNAKE_TURN_SPEED * delta));
-    head_segment.dir += angle_change;
-    if (head_segment.dir >= 2 * pi) {
-        head_segment.dir -= 2 * pi;
-    } else if (head_segment.dir < 0) {
-        head_segment.dir += 2 * pi;
+    // Update target angle from key inputs
+    var target_head_dir_vec: Vec2f = .{ .x = 0, .y = 0 };
+    if (inputs.north) target_head_dir_vec.y -= 1;
+    if (inputs.south) target_head_dir_vec.y += 1;
+    if (inputs.east) target_head_dir_vec.x += 1;
+    if (inputs.west) target_head_dir_vec.x -= 1;
+    if (target_head_dir_vec.x != 0 or target_head_dir_vec.y != 0) {
+        target_head_dir = std.math.atan2(f32, target_head_dir_vec.y, target_head_dir_vec.x);
+
+        // Turn head
+        const angle_difference = @mod(((target_head_dir - head_segment.dir) + pi), 2 * pi) - pi;
+        const angle_change = std.math.clamp(angle_difference, @floatCast(f32, -SNAKE_TURN_SPEED * delta), @floatCast(f32, SNAKE_TURN_SPEED * delta));
+        head_segment.dir += angle_change;
+        if (head_segment.dir >= 2 * pi) {
+            head_segment.dir -= 2 * pi;
+        } else if (head_segment.dir < 0) {
+            head_segment.dir += 2 * pi;
+        }
     }
 
     // Move head
