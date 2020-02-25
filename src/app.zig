@@ -143,7 +143,7 @@ pub fn update(current_time: f64, delta: f64) void {
     // Update food
     if (food_pos) |pos| {
         // If the head is close to the fruit
-        if (pos.sub(&head_segment.pos).magnitude() < SNAKE_SEGMENT_LENGTH + 20) {
+        if (pos.sub(&head_segment.pos).magnitude() < (SNAKE_SEGMENT_LENGTH + 20) / 2) {
             // Eat it
             food_pos = null;
             addSegment();
