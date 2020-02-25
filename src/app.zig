@@ -22,6 +22,9 @@ var vbo: platform.GLuint = undefined;
 var ebo: platform.GLuint = undefined;
 var projectionMatrixUniformLocation: platform.GLint = undefined;
 
+var random: std.rand.DefaultPrng = undefined;
+var food_pos: ?Vec2f = null;
+
 var inputs = Inputs{};
 
 /// Keep track of D-Pad status
@@ -44,6 +47,8 @@ pub fn onInit() void {
     while (i < 20) : (i += 1) {
         addSegment();
     }
+
+    random = std.rand.DefaultPrng.init(1337);
 
     vbo = platform.glCreateBuffer();
     ebo = platform.glCreateBuffer();
@@ -135,6 +140,14 @@ pub fn onEvent(event: platform.Event) void {
 }
 
 pub fn update(current_time: f64, delta: f64) void {
+    // Update food
+    if (food_pos) |pos| {} else {
+        food_pos = .{
+            .x = random.random.float(f32) * LEVEL_WIDTH - LEVEL_WIDTH / 2,
+            .y = random.random.float(f32) * LEVEL_HEIGHT - LEVEL_HEIGHT / 2,
+        };
+    }
+
     // Update target angle from key inputs
     var target_head_dir_vec: Vec2f = .{ .x = 0, .y = 0 };
     if (inputs.north) target_head_dir_vec.y -= 1;
@@ -321,6 +334,10 @@ pub fn render(alpha: f64) void {
     }
     const color = SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len];
     render_buffer.pushRect(tail_segment.pos, .{ .x = SNAKE_TAIL_LENGTH, .y = 20 }, color, tail_segment.dir);
+
+    if (food_pos) |pos| {
+        render_buffer.pushRect(pos, .{ .x = 20, .y = 20 }, FOOD_COLOR, 0);
+    }
 
     render_buffer.flush();
     platform.renderPresent();

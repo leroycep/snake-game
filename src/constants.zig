@@ -22,3 +22,4 @@ pub const SEGMENT_COLORS = [_]Color{
     .{ .r = 0xFF, .g = 0x85, .b = 0x16 },
     .{ .r = 0xFB, .g = 0xF2, .b = 0x37 },
 };
+pub const FOOD_COLOR = Color{ .r = 0xFB, .g = 0x31, .b = 0x31 };
