@@ -188,7 +188,7 @@ pub fn update(current_time: f64, delta: f64) void {
     head_segment.pos = head_segment.pos.add(&head_movement);
 
     // Make camera follow snake head
-    const screen_size = Vec2f.fromVeci(&platform.getScreenSize());
+    const screen_size = Vec2f{ .x = VIEWPORT_WIDTH, .y = VIEWPORT_HEIGHT };
     camera_pos = head_segment.pos.sub(&screen_size.scalMul(0.5));
 
     // Make segments trail head
@@ -303,12 +303,12 @@ const RenderBuffer = struct {
             0, 0, 0, 1,
         };
         const scalingMatrix = [_]f32{
-            2 / @intToFloat(f32, screen_size.x), 0,                                    0, -1,
-            0,                                   -2 / @intToFloat(f32, screen_size.y), 0, 1,
-            0,                                   0,                                    1, 0,
-            0,                                   0,                                    0, 1,
+            2 / @intToFloat(f32, VIEWPORT_WIDTH), 0,                                      0, -1,
+            0,                                    -2 / @intToFloat(f32, VIEWPORT_HEIGHT), 0, 1,
+            0,                                    0,                                      1, 0,
+            0,                                    0,                                      0, 1,
         };
-        const projectionMatrix = mulMat4(&scalingMatrix, &translationMatrix);
+        const projectionMatrix = scalingMatrix;//mulMat4(&scalingMatrix, &translationMatrix);
         platform.glUseProgram(shader_program);
 
         platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
