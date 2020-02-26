@@ -8,12 +8,14 @@ var camera_pos = Vec2f{ .x = 0, .y = 0 };
 var target_head_dir: f32 = 0;
 var head_segment = Segment{
     .pos = Vec2f{ .x = 100, .y = 100 },
+    .size = Vec2f{ .x = SNAKE_SEGMENT_LENGTH, .y = SNAKE_HEAD_WIDTH },
     .dir = 0,
 };
 var segments = [_]?Segment{null} ** MAX_SEGMENTS;
 var next_segment_idx: usize = 0;
 var tail_segment = Segment{
     .pos = Vec2f{ .x = 100, .y = 100 },
+    .size = Vec2f{ .x = SNAKE_TAIL_LENGTH, .y = SNAKE_TAIL_WIDTH },
     .dir = 0,
 };
 var frames: usize = 0;
@@ -37,9 +39,14 @@ const Inputs = struct {
 
 const Segment = struct {
     pos: Vec2f,
+    size: Vec2f,
 
     /// In radians
     dir: f32,
+
+    pub fn render(self: *const @This(), render_buffer: *RenderBuffer, color: platform.Color) void {
+        render_buffer.pushRect(self.pos, self.size, color, self.dir);
+    }
 };
 
 pub fn onInit() void {
@@ -330,20 +337,17 @@ pub fn render(alpha: f64) void {
 
     render_buffer.pushRect(.{ .x = 0, .y = 0 }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
 
-    render_buffer.pushRect(head_segment.pos, .{ .x = 50, .y = 50 }, SEGMENT_COLORS[0], head_segment.dir);
+    head_segment.render(&render_buffer, SEGMENT_COLORS[0]);
 
     var idx: usize = 0;
     while (segments[idx]) |segment| {
-        const color = SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len];
-
-        render_buffer.pushRect(segment.pos, .{ .x = SNAKE_SEGMENT_LENGTH, .y = 30 }, color, segment.dir);
+        segment.render(&render_buffer, SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len]);
         idx += 1;
     }
-    const color = SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len];
-    render_buffer.pushRect(tail_segment.pos, .{ .x = SNAKE_TAIL_LENGTH, .y = 20 }, color, tail_segment.dir);
+    tail_segment.render(&render_buffer, SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len]);
 
     if (food_pos) |pos| {
-        render_buffer.pushRect(pos, .{ .x = 20, .y = 20 }, FOOD_COLOR, 0);
+        render_buffer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
     }
 
     render_buffer.flush();
@@ -355,6 +359,10 @@ fn addSegment() void {
         platform.warn("Ran out of space for snake segments\n", .{});
         return;
     }
-    segments[next_segment_idx] = tail_segment;
+    segments[next_segment_idx] = .{
+        .pos = tail_segment.pos,
+        .dir = tail_segment.dir,
+        .size = .{ .x = SNAKE_SEGMENT_LENGTH, .y = SNAKE_SEGMENT_WIDTH },
+    };
     next_segment_idx += 1;
 }
