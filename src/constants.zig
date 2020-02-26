@@ -8,8 +8,10 @@ pub const VIEWPORT_WIDTH = 640;
 pub const VIEWPORT_HEIGHT = 480;
 
 pub const LEVEL_COLOR = Color{ .r = 0x58, .g = 0x83, .b = 0x30 };
-pub const LEVEL_WIDTH = 1000;
-pub const LEVEL_HEIGHT = 1000;
+pub const LEVEL_WIDTH = VIEWPORT_WIDTH;
+pub const LEVEL_HEIGHT = VIEWPORT_HEIGHT;
+pub const LEVEL_OFFSET_X = VIEWPORT_WIDTH / 2;
+pub const LEVEL_OFFSET_Y = VIEWPORT_HEIGHT / 2;
 
 pub const MAX_SEGMENTS = 100;
 pub const SNAKE_SPEED = 200; // pixels / second

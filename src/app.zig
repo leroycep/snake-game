@@ -157,8 +157,8 @@ pub fn update(current_time: f64, delta: f64) void {
         }
     } else {
         food_pos = .{
-            .x = random.random.float(f32) * LEVEL_WIDTH - LEVEL_WIDTH / 2,
-            .y = random.random.float(f32) * LEVEL_HEIGHT - LEVEL_HEIGHT / 2,
+            .x = LEVEL_OFFSET_X + random.random.float(f32) * LEVEL_WIDTH - LEVEL_WIDTH / 2,
+            .y = LEVEL_OFFSET_Y + random.random.float(f32) * LEVEL_HEIGHT - LEVEL_HEIGHT / 2,
         };
     }
 
@@ -308,7 +308,7 @@ const RenderBuffer = struct {
             0,                                    0,                                      1, 0,
             0,                                    0,                                      0, 1,
         };
-        const projectionMatrix = scalingMatrix;//mulMat4(&scalingMatrix, &translationMatrix);
+        const projectionMatrix = scalingMatrix; //mulMat4(&scalingMatrix, &translationMatrix);
         platform.glUseProgram(shader_program);
 
         platform.glBindBuffer(platform.GL_ARRAY_BUFFER, vbo);
@@ -335,7 +335,7 @@ pub fn render(alpha: f64) void {
     var render_buffer = RenderBuffer.init();
     render_buffer.setTranslation(camera_pos);
 
-    render_buffer.pushRect(.{ .x = 0, .y = 0 }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
+    render_buffer.pushRect(.{ .x = LEVEL_OFFSET_X, .y = LEVEL_OFFSET_Y }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
 
     head_segment.render(&render_buffer, SEGMENT_COLORS[0]);
 
