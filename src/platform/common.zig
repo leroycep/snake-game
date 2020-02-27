@@ -27,6 +27,13 @@ pub const Vec2f = struct {
         };
     }
 
+    pub fn scalDiv(self: *const Vec2f, scal: f32) Vec2f {
+        return Vec2f{
+            .x = self.x / scal,
+            .y = self.y / scal,
+        };
+    }
+
     pub fn dot(self: *const Vec2f, other: *const Vec2f) f32 {
         return self.x * other.x + self.y * other.y;
     }
@@ -51,6 +58,10 @@ pub const Vec2f = struct {
             .x = self.x / mag,
             .y = self.y / mag,
         };
+    }
+
+    pub fn magnitudeSquared(self: *const Vec2f) f32 {
+        return self.x * self.x + self.y * self.y;
     }
 
     pub fn magnitude(self: *const Vec2f) f32 {

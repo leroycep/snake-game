@@ -4,6 +4,7 @@ usingnamespace @import("constants.zig");
 const Vec2f = platform.Vec2f;
 const pi = std.math.pi;
 const Renderer = @import("renderer.zig").Renderer;
+const physics = @import("physics.zig");
 
 var renderer: Renderer = undefined;
 
@@ -25,6 +26,22 @@ var frames: usize = 0;
 
 var random: std.rand.DefaultPrng = undefined;
 var food_pos: ?Vec2f = null;
+
+var playerCirc = physics.RigidCircle{
+    .radius = 50,
+    .pos = .{ .x = 300, .y = 50 },
+    .vel = .{ .x = 0, .y = 0 },
+    .restitution = 0.2,
+    .inv_mass = 1.0 / 50.0,
+};
+
+var floorCirc = physics.RigidCircle{
+    .radius = 100,
+    .pos = .{ .x = 300, .y = 400 },
+    .vel = .{ .x = 0, .y = 0 },
+    .restitution = 0.2,
+    .inv_mass = 0,
+};
 
 var inputs = Inputs{};
 
@@ -96,6 +113,14 @@ pub fn update(current_time: f64, delta: f64) void {
             .x = LEVEL_OFFSET_X + random.random.float(f32) * LEVEL_WIDTH - LEVEL_WIDTH / 2,
             .y = LEVEL_OFFSET_Y + random.random.float(f32) * LEVEL_HEIGHT - LEVEL_HEIGHT / 2,
         };
+    }
+
+    if (inputs.south) playerCirc.vel.y += @floatCast(f32, 50 * delta);
+    playerCirc.pos = playerCirc.pos.add(&playerCirc.vel.scalMul(@floatCast(f32, delta)));
+
+    if (playerCirc.collsion(&floorCirc)) |manifold| {
+        manifold.resolve_collision();
+        manifold.position_correction();
     }
 
     // Update target angle from key inputs
@@ -192,6 +217,9 @@ pub fn render(alpha: f64) void {
     if (food_pos) |pos| {
         renderer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
     }
+
+    renderer.pushRect(playerCirc.pos, .{ .x = playerCirc.radius * 2, .y = playerCirc.radius * 2 }, .{ .r = 0xFF, .g = 0x00, .b = 0xFF }, 0);
+    renderer.pushRect(floorCirc.pos, .{ .x = floorCirc.radius * 2, .y = floorCirc.radius * 2 }, .{ .r = 0xFF, .g = 0x00, .b = 0xFF }, 0);
 
     renderer.flush();
     platform.renderPresent();
