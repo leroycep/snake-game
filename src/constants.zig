@@ -23,6 +23,10 @@ pub const SNAKE_SEGMENT_WIDTH = 15; // pixels
 pub const SNAKE_TAIL_LENGTH = 15; // pixels
 pub const SNAKE_TAIL_WIDTH = 10; // pixels
 
+pub const SNAKE_SEGMENT_RESTITUTION = 0.5;
+pub const SNAKE_SEGMENT_MASS = 50.0;
+pub const SNAKE_SEGMENT_INV_MASS = 1.0 / SNAKE_SEGMENT_MASS;
+
 pub const FOOD_WIDTH = 10; // pixels
 pub const FOOD_HEIGHT = 10; // pixels
 

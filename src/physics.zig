@@ -86,4 +86,40 @@ pub const RigidCircle = struct {
             };
         }
     }
+
+    pub fn applyForce(self: *@This(), force: *const Vec2f) void {
+        self.vel = self.vel.add(&force.scalMul(self.inv_mass));
+    }
 };
+
+pub fn string_constraint(a: *RigidCircle, b: *RigidCircle, distance: f32) ?Manifold {
+    const offset = a.pos.sub(&b.pos);
+    if (offset.magnitudeSquared() < distance * distance) {
+        // Don't do anything when the objects are close to each other
+        return null;
+    }
+
+    const d = offset.magnitude();
+    const p = d - distance;
+
+    return Manifold{
+        .rigidBodyA = a,
+        .rigidBodyB = b,
+        .normal = if (d < distance) offset.scalDiv(d).scalMul(-1) else offset.scalDiv(d),
+        .penetration = if (p < 0) -p else p,
+    };
+}
+
+pub fn spring_constraint(a: *RigidCircle, b: *RigidCircle, distance: f32, restitution: f32) void {
+    const offset = a.pos.sub(&b.pos);
+    const d = offset.magnitude();
+
+    const normal = if (d == 0) Vec2f{ .x = 0, .y = 0 } else offset.scalDiv(d);
+    const penetration = d - distance;
+    const relVel = a.vel.sub(&b.vel);
+
+    const springForce = normal.scalMul(penetration * (1.0 / restitution)).add(&relVel.scalMul(0.8));
+
+    a.applyForce(&springForce.scalMul(-1));
+    b.applyForce(&springForce);
+}
