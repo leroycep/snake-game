@@ -36,12 +36,28 @@ var frames: usize = 0;
 var random: std.rand.DefaultPrng = undefined;
 var food_pos: ?Vec2f = null;
 
-var column = physics.RigidCircle{
-    .radius = 20,
-    .pos = .{ .x = 300, .y = 400 },
-    .vel = .{ .x = 0, .y = 0 },
-    .restitution = 0.2,
-    .inv_mass = 0,
+var columns = [_]physics.RigidCircle{
+    .{
+        .radius = 20,
+        .pos = .{ .x = 300, .y = 400 },
+        .vel = .{ .x = 0, .y = 0 },
+        .restitution = 0.2,
+        .inv_mass = 0,
+    },
+    .{
+        .radius = 20,
+        .pos = .{ .x = 250, .y = 350 },
+        .vel = .{ .x = 0, .y = 0 },
+        .restitution = 0.2,
+        .inv_mass = 0,
+    },
+    .{
+        .radius = 20,
+        .pos = .{ .x = 350, .y = 350 },
+        .vel = .{ .x = 0, .y = 0 },
+        .restitution = 0.2,
+        .inv_mass = 0,
+    },
 };
 
 var inputs = Inputs{};
@@ -154,9 +170,11 @@ pub fn update(current_time: f64, delta: f64) void {
 
         if (segment_bodies[segment_idx]) |*cur_body| {
             physics.spring_constraint(cur_body, prev_body, SNAKE_SEGMENT_LENGTH, 0.001);
-            if (cur_body.collsion(&column)) |manifold| {
-                manifold.resolve_collision();
-                manifold.position_correction();
+            for (columns) |*column| {
+                if (cur_body.collsion(column)) |manifold| {
+                    manifold.resolve_collision();
+                    manifold.position_correction();
+                }
             }
             prev_body = cur_body;
         } else {
@@ -222,7 +240,9 @@ pub fn render(alpha: f64) void {
 
     renderer.pushRect(.{ .x = LEVEL_OFFSET_X, .y = LEVEL_OFFSET_Y }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
 
-    renderer.pushRect(column.pos, .{ .x = column.radius * 2, .y = column.radius * 2 }, .{ .r = 0xFF, .g = 0x00, .b = 0xFF }, 0);
+    for (columns) |column| {
+        renderer.pushRect(column.pos, .{ .x = column.radius * 2, .y = column.radius * 2 }, .{ .r = 0xFF, .g = 0x00, .b = 0xFF }, 0);
+    }
 
     head_segment.render(&renderer, SEGMENT_COLORS[0]);
 
