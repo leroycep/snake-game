@@ -154,6 +154,10 @@ pub fn update(current_time: f64, delta: f64) void {
 
         if (segment_bodies[segment_idx]) |*cur_body| {
             physics.spring_constraint(cur_body, prev_body, SNAKE_SEGMENT_LENGTH, 0.001);
+            if (cur_body.collsion(&column)) |manifold| {
+                manifold.resolve_collision();
+                manifold.position_correction();
+            }
             prev_body = cur_body;
         } else {
             // Update the tail
