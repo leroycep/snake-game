@@ -58,6 +58,34 @@ var columns = [_]physics.RigidCircle{
         .restitution = 0.2,
         .inv_mass = 0,
     },
+    .{
+        .radius = 20,
+        .pos = .{ .x = 50, .y = 50 },
+        .vel = .{ .x = 0, .y = 0 },
+        .restitution = 0.2,
+        .inv_mass = 0,
+    },
+    .{
+        .radius = 20,
+        .pos = .{ .x = LEVEL_OFFSET_X + LEVEL_WIDTH / 2.0 - 50.0, .y = LEVEL_OFFSET_Y + LEVEL_HEIGHT / 2.0 - 50.0 },
+        .vel = .{ .x = 0, .y = 0 },
+        .restitution = 0.2,
+        .inv_mass = 0,
+    },
+    .{
+        .radius = 20,
+        .pos = .{ .x = LEVEL_OFFSET_X + LEVEL_WIDTH / 2.0 - 50.0, .y = 50 },
+        .vel = .{ .x = 0, .y = 0 },
+        .restitution = 0.2,
+        .inv_mass = 0,
+    },
+    .{
+        .radius = 20,
+        .pos = .{ .x = 50.0, .y = LEVEL_OFFSET_Y + LEVEL_HEIGHT / 2.0 - 50.0 },
+        .vel = .{ .x = 0, .y = 0 },
+        .restitution = 0.2,
+        .inv_mass = 0,
+    },
 };
 
 var inputs = Inputs{};
