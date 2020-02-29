@@ -26,8 +26,8 @@ var tail_segment = Segment{
 };
 var frames: usize = 0;
 
-const PastPosition = struct { time: f64, pos: Vec2f };
-var position_history_buffer = [_]PastPosition{.{ .time = 0, .pos = .{ .x = 100, .y = 100 } }} ** HISTORY_BUFFER_SIZE;
+const PastPosition = struct { time: f64, pos: Vec2f, dir: f32 };
+var position_history_buffer = [_]PastPosition{.{ .time = 0, .pos = .{ .x = 100, .y = 100 }, .dir = 0 }} ** HISTORY_BUFFER_SIZE;
 var position_history = RingBuffer(PastPosition).init(position_history_buffer[0..]);
 
 var random: std.rand.DefaultPrng = undefined;
@@ -131,7 +131,7 @@ pub fn update(current_time: f64, delta: f64) void {
     head_segment.pos = head_segment.pos.add(&head_movement);
 
     // Track where the head has been
-    position_history.push(.{ .time = @floatCast(f32, current_time), .pos = head_segment.pos }) catch builtin.panic("failed to push to position history buffer", null);
+    position_history.push(.{ .time = @floatCast(f32, current_time), .pos = head_segment.pos, .dir = head_segment.dir }) catch builtin.panic("failed to push to position history buffer", null);
 
     // Make camera follow snake head
     const screen_size = Vec2f{ .x = VIEWPORT_WIDTH, .y = VIEWPORT_HEIGHT };
@@ -165,15 +165,8 @@ pub fn update(current_time: f64, delta: f64) void {
 
         if (hist_pos_opt) |hist_pos| {
             cur_segment.pos = hist_pos.pos;
+            cur_segment.dir = hist_pos.dir;
         }
-
-        //        var vec_from_prev = cur_segment.pos.sub(&prev_segment.pos);
-        //        if (vec_from_prev.magnitude() > dist_from_prev) {
-        //            const dir_from_prev = vec_from_prev.normalize();
-        //            const new_offset_from_prev = dir_from_prev.scalMul(dist_from_prev);
-        //
-        //            cur_segment.dir = std.math.atan2(f32, dir_from_prev.y, dir_from_prev.x);
-        //        }
 
         prev_segment = cur_segment;
     }
