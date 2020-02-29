@@ -1,4 +1,5 @@
-const pi = @import("std").math.pi;
+const std = @import("std");
+const pi = std.math.pi;
 const Color = @import("platform.zig").Color;
 
 pub const MAX_DELTA_SECONDS: f64 = 0.25;
@@ -27,7 +28,7 @@ pub const FOOD_WIDTH = 10; // pixels
 pub const FOOD_HEIGHT = 10; // pixels
 
 pub const SEGMENT_TIME_OFFSET = @as(f64, SNAKE_SEGMENT_LENGTH) / SNAKE_SPEED;
-pub const HISTORY_BUFFER_SIZE = SNAKE_SPEED / SNAKE_SEGMENT_LENGTH * (1 / TICK_DELTA_SECONDS) * MAX_SEGMENTS;
+pub const HISTORY_BUFFER_SIZE = std.math.ceil((1.0 / TICK_DELTA_SECONDS) * SEGMENT_TIME_OFFSET * MAX_SEGMENTS) * 1.5;
 
 pub const SEGMENT_COLORS = [_]Color{
     .{ .r = 0x31, .g = 0x31, .b = 0x31 },

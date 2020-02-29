@@ -160,6 +160,9 @@ pub fn update(current_time: f64, delta: f64) void {
                     hist_pos_opt = position_history.idx(position_history_idx);
                     break;
                 }
+            } else {
+                hist_pos_opt = position_history.idx(position_history_idx);
+                break;
             }
         }
 
@@ -169,6 +172,12 @@ pub fn update(current_time: f64, delta: f64) void {
         }
 
         prev_segment = cur_segment;
+    }
+
+    // Clear the unused history
+    var clear_hist_idx: usize = 0;
+    while (clear_hist_idx < position_history_idx) : (clear_hist_idx += 1) {
+        _ = position_history.pop();
     }
 
     frames += 1;
