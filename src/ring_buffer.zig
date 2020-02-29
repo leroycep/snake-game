@@ -44,6 +44,17 @@ pub fn RingBuffer(comptime T: type) type {
             return self.buffer[self.tail];
         }
 
+        pub fn idx(self: *const @This(), i: usize) ?T {
+            if (i >= self.buffer.len) {
+                return null;
+            }
+            const j = (self.tail + i) % self.buffer.len;
+            if (j < self.head or j >= self.tail) {
+                return self.buffer[j];
+            }
+            return null;
+        }
+
         pub fn len(self: *@This()) usize {
             if (self.head == self.tail) {
                 return 0;
@@ -60,7 +71,7 @@ pub fn RingBuffer(comptime T: type) type {
     };
 }
 
-test "Ringbuffer simple test" {
+test "RingBuffer simple test" {
     var buf = [_]i32{0} ** 10;
     var ring = RingBuffer(i32).init(buf[0..]);
 
@@ -69,6 +80,36 @@ test "Ringbuffer simple test" {
     try ring.push(3);
 
     assert(ring.head == 3);
+
+    assert(ring.idx(0).? == 1);
+    assert(ring.idx(1).? == 2);
+    assert(ring.idx(2).? == 3);
+
+    assert(ring.pop().? == 1);
+    assert(ring.pop().? == 2);
+    assert(ring.pop().? == 3);
+    assert(ring.pop() == null);
+}
+
+test "RingBuffer wrap around test" {
+    var buf = [_]i32{0} ** 4;
+    var ring = RingBuffer(i32).init(buf[0..]);
+
+    try ring.push(1);
+    try ring.push(2);
+    try ring.push(3);
+    _ = ring.pop();
+    _ = ring.pop();
+    _ = ring.pop();
+    try ring.push(1);
+    try ring.push(2);
+    try ring.push(3);
+
+    assert(ring.head == 2);
+
+    assert(ring.idx(0).? == 1);
+    assert(ring.idx(1).? == 2);
+    assert(ring.idx(2).? == 3);
 
     assert(ring.pop().? == 1);
     assert(ring.pop().? == 2);
