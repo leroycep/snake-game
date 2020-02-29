@@ -26,7 +26,7 @@ var tail_segment = Segment{
 };
 var frames: usize = 0;
 
-const PastPosition = struct { time: f32, pos: Vec2f };
+const PastPosition = struct { time: f64, pos: Vec2f };
 var position_history_buffer = [_]PastPosition{.{ .time = 0, .pos = .{ .x = 100, .y = 100 } }} ** HISTORY_BUFFER_SIZE;
 var position_history = RingBuffer(PastPosition).init(position_history_buffer[0..]);
 
@@ -139,6 +139,7 @@ pub fn update(current_time: f64, delta: f64) void {
 
     // Make segments trail head
     var segment_idx: usize = 0;
+    var position_history_idx: usize = position_history.len() - 1;
     var prev_segment = &head_segment;
     while (prev_segment != &tail_segment) : (segment_idx += 1) {
         var cur_segment = if (segments[segment_idx] != null) &segments[segment_idx].? else &tail_segment;
@@ -150,14 +151,29 @@ pub fn update(current_time: f64, delta: f64) void {
             dist_from_prev = SNAKE_TAIL_LENGTH / 2 + SNAKE_SEGMENT_LENGTH / 2;
         }
 
-        var vec_from_prev = cur_segment.pos.sub(&prev_segment.pos);
-        if (vec_from_prev.magnitude() > dist_from_prev) {
-            const dir_from_prev = vec_from_prev.normalize();
-            const new_offset_from_prev = dir_from_prev.scalMul(dist_from_prev);
-
-            cur_segment.dir = std.math.atan2(f32, dir_from_prev.y, dir_from_prev.x);
-            cur_segment.pos = prev_segment.pos.add(&new_offset_from_prev);
+        const time_offset = @intToFloat(f64, segment_idx + 1) * SEGMENT_TIME_OFFSET;
+        const segment_time = current_time - time_offset;
+        var hist_pos_opt: ?PastPosition = null;
+        while (position_history_idx > 0) : (position_history_idx -= 1) {
+            if (position_history.idx(position_history_idx - 1)) |hist_pos| {
+                if (hist_pos.time < segment_time) {
+                    hist_pos_opt = position_history.idx(position_history_idx);
+                    break;
+                }
+            }
         }
+
+        if (hist_pos_opt) |hist_pos| {
+            cur_segment.pos = hist_pos.pos;
+        }
+
+        //        var vec_from_prev = cur_segment.pos.sub(&prev_segment.pos);
+        //        if (vec_from_prev.magnitude() > dist_from_prev) {
+        //            const dir_from_prev = vec_from_prev.normalize();
+        //            const new_offset_from_prev = dir_from_prev.scalMul(dist_from_prev);
+        //
+        //            cur_segment.dir = std.math.atan2(f32, dir_from_prev.y, dir_from_prev.x);
+        //        }
 
         prev_segment = cur_segment;
     }
