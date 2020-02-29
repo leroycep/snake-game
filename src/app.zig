@@ -4,6 +4,7 @@ usingnamespace @import("constants.zig");
 const Vec2f = platform.Vec2f;
 const pi = std.math.pi;
 const Renderer = @import("renderer.zig").Renderer;
+const ring_buffer = @import("ring_buffer.zig");
 
 var renderer: Renderer = undefined;
 
@@ -208,4 +209,8 @@ fn addSegment() void {
         .size = .{ .x = SNAKE_SEGMENT_LENGTH, .y = SNAKE_SEGMENT_WIDTH },
     };
     next_segment_idx += 1;
+}
+
+test "" {
+    std.meta.refAllDecls(ring_buffer);
 }

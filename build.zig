@@ -17,6 +17,8 @@ pub fn build(b: *Builder) void {
     exe.setTargetGLibC(2, 17, 0);
     exe.install();
 
+    const tests = b.addTest("src/app.zig");
+
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
 
@@ -42,8 +44,10 @@ pub fn build(b: *Builder) void {
     b.step("wasm", "Build WASM binary").dependOn(&wasm.step);
     b.step("native", "Build the native binary").dependOn(&exe.step);
     b.step("run", "Run the native binary").dependOn(&run_cmd.step);
+    b.step("test", "Run tests").dependOn(&tests.step);
 
     const all = b.step("all", "Build all binaries");
     all.dependOn(&wasm.step);
     all.dependOn(&exe.step);
+    all.dependOn(&tests.step);
 }
