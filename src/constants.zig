@@ -26,6 +26,8 @@ pub const SNAKE_TAIL_WIDTH = 10; // pixels
 pub const FOOD_WIDTH = 10; // pixels
 pub const FOOD_HEIGHT = 10; // pixels
 
+pub const HISTORY_BUFFER_SIZE = SNAKE_SPEED / SNAKE_SEGMENT_LENGTH / TICK_DELTA_SECONDS * MAX_SEGMENTS;
+
 pub const SEGMENT_COLORS = [_]Color{
     .{ .r = 0x31, .g = 0x31, .b = 0x31 },
     .{ .r = 0xFF, .g = 0x85, .b = 0x16 },

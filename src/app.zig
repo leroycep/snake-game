@@ -1,10 +1,12 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const platform = @import("platform.zig");
 usingnamespace @import("constants.zig");
 const Vec2f = platform.Vec2f;
 const pi = std.math.pi;
 const Renderer = @import("renderer.zig").Renderer;
 const ring_buffer = @import("ring_buffer.zig");
+const RingBuffer = ring_buffer.RingBuffer;
 
 var renderer: Renderer = undefined;
 
@@ -23,6 +25,10 @@ var tail_segment = Segment{
     .dir = 0,
 };
 var frames: usize = 0;
+
+const PastPosition = struct { time: f32, pos: Vec2f };
+var position_history_buffer = [_]PastPosition{.{ .time = 0, .pos = .{ .x = 100, .y = 100 } }} ** HISTORY_BUFFER_SIZE;
+var position_history = RingBuffer(PastPosition).init(position_history_buffer[0..]);
 
 var random: std.rand.DefaultPrng = undefined;
 var food_pos: ?Vec2f = null;
@@ -123,6 +129,9 @@ pub fn update(current_time: f64, delta: f64) void {
     const head_speed = @floatCast(f32, SNAKE_SPEED * delta);
     const head_movement = Vec2f.unitFromRad(head_segment.dir).scalMul(head_speed);
     head_segment.pos = head_segment.pos.add(&head_movement);
+
+    // Track where the head has been
+    position_history.push(.{ .time = @floatCast(f32, current_time), .pos = head_segment.pos }) catch builtin.panic("failed to push to position history buffer", null);
 
     // Make camera follow snake head
     const screen_size = Vec2f{ .x = VIEWPORT_WIDTH, .y = VIEWPORT_HEIGHT };
