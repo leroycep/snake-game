@@ -14,6 +14,7 @@ pub fn build(b: *Builder) void {
     exe.addIncludeDir("./c/include/");
     exe.addCSourceFile("./c/src/glad.c", &[_][]const u8{});
     exe.linkLibC();
+    exe.setTargetGLibC(2, 17, 0);
     exe.install();
 
     const run_cmd = exe.run();
