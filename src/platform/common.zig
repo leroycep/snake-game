@@ -31,6 +31,13 @@ pub const Vec2f = struct {
         return self.x * other.x + self.y * other.y;
     }
 
+    pub fn mul(self: *const Vec2f, other: *const Vec2f) Vec2f {
+        return .{
+            .x = self.x * other.x,
+            .y = self.y * other.y,
+        };
+    }
+
     pub fn add(self: *const Vec2f, other: *const Vec2f) Vec2f {
         return .{
             .x = self.x + other.x,

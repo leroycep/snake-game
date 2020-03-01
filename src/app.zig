@@ -7,13 +7,15 @@ const pi = std.math.pi;
 const Renderer = @import("renderer.zig").Renderer;
 const ring_buffer = @import("ring_buffer.zig");
 const RingBuffer = ring_buffer.RingBuffer;
+const collision = @import("collision.zig");
+const OBB = collision.OBB;
 
 var renderer: Renderer = undefined;
 
 var camera_pos = Vec2f{ .x = 0, .y = 0 };
 var target_head_dir: f32 = 0;
 var head_segment = Segment{
-    .pos = Vec2f{ .x = 100, .y = 100 },
+    .pos = Vec2f{ .x = 150, .y = 100 },
     .size = Vec2f{ .x = SNAKE_SEGMENT_LENGTH, .y = SNAKE_HEAD_WIDTH },
     .dir = 0,
 };
@@ -137,6 +139,8 @@ pub fn update(current_time: f64, delta: f64) void {
     const screen_size = Vec2f{ .x = VIEWPORT_WIDTH, .y = VIEWPORT_HEIGHT };
     camera_pos = head_segment.pos.sub(&screen_size.scalMul(0.5));
 
+    const head_obb = OBB.init(head_segment.pos, head_segment.size, head_segment.dir);
+
     // Make segments trail head
     var segment_idx: usize = 0;
     var position_history_idx: usize = position_history.len() - 1;
@@ -169,6 +173,14 @@ pub fn update(current_time: f64, delta: f64) void {
         if (hist_pos_opt) |hist_pos| {
             cur_segment.pos = hist_pos.pos;
             cur_segment.dir = hist_pos.dir;
+        }
+
+        // Check if the head collides with this segment
+        const cur_obb = OBB.init(cur_segment.pos, cur_segment.size, cur_segment.dir);
+        if (segment_idx > 1 and cur_obb.collides(&head_obb)) {
+            platform.warn("You crashed into your tail! Oh no!\n", .{});
+            platform.quit();
+            return;
         }
 
         prev_segment = cur_segment;
