@@ -146,10 +146,6 @@ pub fn update(current_time: f64, delta: f64) void {
     // Track where the head has been
     position_history.push(.{ .time = @floatCast(f32, current_time), .pos = head_segment.pos, .dir = head_segment.dir }) catch builtin.panic("failed to push to position history buffer", null);
 
-    // Make camera follow snake head
-    const screen_size = Vec2f{ .x = VIEWPORT_WIDTH, .y = VIEWPORT_HEIGHT };
-    camera_pos = head_segment.pos.sub(&screen_size.scalMul(0.5));
-
     const head_obb = OBB.init(head_segment.pos, head_segment.size, head_segment.dir);
 
     // Make segments trail head
