@@ -226,14 +226,14 @@ pub fn render(alpha: f64) void {
 
     renderer.pushRect(.{ .x = LEVEL_OFFSET_X, .y = LEVEL_OFFSET_Y }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
 
-    head_segment.render(&renderer, SEGMENT_COLORS[0]);
-
-    var idx: usize = 0;
-    while (segments[idx]) |segment| {
-        segment.render(&renderer, SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len]);
-        idx += 1;
-    }
+    var idx: usize = next_segment_idx;
     tail_segment.render(&renderer, SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len]);
+    while (idx > 0) {
+        const segment = segments[idx - 1].?;
+        segment.render(&renderer, SEGMENT_COLORS[idx % SEGMENT_COLORS.len]);
+        idx -= 1;
+    }
+    head_segment.render(&renderer, SEGMENT_COLORS[0]);
 
     if (food_pos) |pos| {
         renderer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
