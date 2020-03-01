@@ -144,7 +144,7 @@ pub fn update(current_time: f64, delta: f64) void {
     }
 
     // Track where the head has been
-    position_history.push(.{ .time = @floatCast(f32, current_time), .pos = head_segment.pos, .dir = head_segment.dir }) catch builtin.panic("failed to push to position history buffer", null);
+    position_history.push(.{ .time = current_time, .pos = head_segment.pos, .dir = head_segment.dir }) catch builtin.panic("failed to push to position history buffer", null);
 
     const head_obb = OBB.init(head_segment.pos, head_segment.size, head_segment.dir);
 
@@ -155,20 +155,19 @@ pub fn update(current_time: f64, delta: f64) void {
     while (prev_segment != &tail_segment) : (segment_idx += 1) {
         var cur_segment = if (segments[segment_idx] != null) &segments[segment_idx].? else &tail_segment;
 
-        var dist_from_prev: f32 = undefined;
-        if (cur_segment != &tail_segment) {
-            dist_from_prev = SNAKE_SEGMENT_LENGTH;
+        var time_offset: f64 = undefined;
+        if (cur_segment == &tail_segment) {
+            time_offset = HEAD_TIME_OFFSET + @intToFloat(f64, segment_idx - 1) * SEGMENT_TIME_OFFSET + TAIL_TIME_OFFSET;
         } else {
-            dist_from_prev = SNAKE_TAIL_LENGTH / 2 + SNAKE_SEGMENT_LENGTH / 2;
+            time_offset = HEAD_TIME_OFFSET + @intToFloat(f64, segment_idx) * SEGMENT_TIME_OFFSET;
         }
 
-        const time_offset = @intToFloat(f64, segment_idx + 1) * SEGMENT_TIME_OFFSET;
         const segment_time = current_time - time_offset;
         var hist_pos_opt: ?PastPosition = null;
         while (position_history_idx > 0) : (position_history_idx -= 1) {
             if (position_history.idx(position_history_idx - 1)) |hist_pos| {
                 if (hist_pos.time < segment_time) {
-                    hist_pos_opt = position_history.idx(position_history_idx);
+                    hist_pos_opt = position_history.idx(position_history_idx - 1);
                     break;
                 }
             } else {
@@ -194,7 +193,7 @@ pub fn update(current_time: f64, delta: f64) void {
     }
 
     // Clear the unused history
-    var clear_hist_idx: usize = 0;
+    var clear_hist_idx: usize = 1;
     while (clear_hist_idx < position_history_idx) : (clear_hist_idx += 1) {
         _ = position_history.pop();
     }

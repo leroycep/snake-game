@@ -27,7 +27,9 @@ pub const SNAKE_TAIL_WIDTH = 10; // pixels
 pub const FOOD_WIDTH = 10; // pixels
 pub const FOOD_HEIGHT = 10; // pixels
 
+pub const HEAD_TIME_OFFSET = @as(f64, SNAKE_SEGMENT_LENGTH) / SNAKE_SPEED;
 pub const SEGMENT_TIME_OFFSET = @as(f64, SNAKE_SEGMENT_LENGTH) / SNAKE_SPEED;
+pub const TAIL_TIME_OFFSET = @as(f64, (SNAKE_TAIL_LENGTH + SNAKE_SEGMENT_LENGTH) / 2) / SNAKE_SPEED;
 pub const HISTORY_BUFFER_SIZE = std.math.ceil((1.0 / TICK_DELTA_SECONDS) * SEGMENT_TIME_OFFSET * MAX_SEGMENTS) * 1.5;
 
 pub const SEGMENT_COLORS = [_]Color{
