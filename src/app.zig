@@ -15,7 +15,7 @@ var renderer: Renderer = undefined;
 var camera_pos = Vec2f{ .x = 0, .y = 0 };
 var target_head_dir: f32 = 0;
 var head_segment = Segment{
-    .pos = Vec2f{ .x = 150, .y = 100 },
+    .pos = Vec2f{ .x = 100, .y = 100 },
     .size = Vec2f{ .x = SNAKE_SEGMENT_LENGTH, .y = SNAKE_HEAD_WIDTH },
     .dir = 0,
 };
@@ -60,10 +60,7 @@ const Segment = struct {
 pub fn onInit() void {
     renderer = Renderer.init();
 
-    var i: usize = 0;
-    while (i < 20) : (i += 1) {
-        addSegment();
-    }
+    addSegment();
 
     random = std.rand.DefaultPrng.init(1337);
 }
