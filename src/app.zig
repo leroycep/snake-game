@@ -129,6 +129,20 @@ pub fn update(current_time: f64, delta: f64) void {
     const head_movement = Vec2f.unitFromRad(head_segment.dir).scalMul(head_speed);
     head_segment.pos = head_segment.pos.add(&head_movement);
 
+    // Wrap head around screen
+    if (head_segment.pos.x > LEVEL_OFFSET_X + LEVEL_WIDTH / 2.0) {
+        head_segment.pos.x -= LEVEL_WIDTH;
+    }
+    if (head_segment.pos.x < LEVEL_OFFSET_X - LEVEL_WIDTH / 2.0) {
+        head_segment.pos.x += LEVEL_WIDTH;
+    }
+    if (head_segment.pos.y > LEVEL_OFFSET_Y + LEVEL_HEIGHT / 2.0) {
+        head_segment.pos.y -= LEVEL_HEIGHT;
+    }
+    if (head_segment.pos.y < LEVEL_OFFSET_Y - LEVEL_HEIGHT / 2.0) {
+        head_segment.pos.y += LEVEL_HEIGHT;
+    }
+
     // Track where the head has been
     position_history.push(.{ .time = @floatCast(f32, current_time), .pos = head_segment.pos, .dir = head_segment.dir }) catch builtin.panic("failed to push to position history buffer", null);
 
