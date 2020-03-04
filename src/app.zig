@@ -27,6 +27,7 @@ var tail_segment = Segment{
     .dir = 0,
 };
 var frames: usize = 0;
+var dead: bool = false;
 
 const PastPosition = struct { time: f64, pos: Vec2f, dir: f32 };
 var position_history_buffer = [_]PastPosition{.{ .time = 0, .pos = .{ .x = 100, .y = 100 }, .dir = 0 }} ** HISTORY_BUFFER_SIZE;
@@ -52,8 +53,12 @@ const Segment = struct {
     /// In radians
     dir: f32,
 
+    show: bool = true,
+
     pub fn render(self: *const @This(), render_buffer: *Renderer, color: platform.Color) void {
-        render_buffer.pushRect(self.pos, self.size, color, self.dir);
+        if (self.show) {
+            render_buffer.pushRect(self.pos, self.size, color, self.dir);
+        }
     }
 };
 
@@ -90,18 +95,20 @@ pub fn onEvent(event: platform.Event) void {
 
 pub fn update(current_time: f64, delta: f64) void {
     // Update food
-    if (food_pos) |pos| {
-        // If the head is close to the fruit
-        if (pos.sub(&head_segment.pos).magnitude() < (SNAKE_SEGMENT_LENGTH + 20) / 2) {
-            // Eat it
-            food_pos = null;
-            addSegment();
+    if (!dead) {
+        if (food_pos) |pos| {
+            // If the head is close to the fruit
+            if (pos.sub(&head_segment.pos).magnitude() < (SNAKE_SEGMENT_LENGTH + 20) / 2) {
+                // Eat it
+                food_pos = null;
+                addSegment();
+            }
+        } else {
+            food_pos = .{
+                .x = LEVEL_OFFSET_X + random.random.float(f32) * LEVEL_WIDTH - LEVEL_WIDTH / 2,
+                .y = LEVEL_OFFSET_Y + random.random.float(f32) * LEVEL_HEIGHT - LEVEL_HEIGHT / 2,
+            };
         }
-    } else {
-        food_pos = .{
-            .x = LEVEL_OFFSET_X + random.random.float(f32) * LEVEL_WIDTH - LEVEL_WIDTH / 2,
-            .y = LEVEL_OFFSET_Y + random.random.float(f32) * LEVEL_HEIGHT - LEVEL_HEIGHT / 2,
-        };
     }
 
     // Update target angle from key inputs
@@ -125,26 +132,28 @@ pub fn update(current_time: f64, delta: f64) void {
     }
 
     // Move head
-    const head_speed = @floatCast(f32, SNAKE_SPEED * delta);
-    const head_movement = Vec2f.unitFromRad(head_segment.dir).scalMul(head_speed);
-    head_segment.pos = head_segment.pos.add(&head_movement);
+    if (!dead) {
+        const head_speed = @floatCast(f32, SNAKE_SPEED * delta);
+        const head_movement = Vec2f.unitFromRad(head_segment.dir).scalMul(head_speed);
+        head_segment.pos = head_segment.pos.add(&head_movement);
 
-    // Wrap head around screen
-    if (head_segment.pos.x > LEVEL_OFFSET_X + LEVEL_WIDTH / 2.0) {
-        head_segment.pos.x -= LEVEL_WIDTH;
-    }
-    if (head_segment.pos.x < LEVEL_OFFSET_X - LEVEL_WIDTH / 2.0) {
-        head_segment.pos.x += LEVEL_WIDTH;
-    }
-    if (head_segment.pos.y > LEVEL_OFFSET_Y + LEVEL_HEIGHT / 2.0) {
-        head_segment.pos.y -= LEVEL_HEIGHT;
-    }
-    if (head_segment.pos.y < LEVEL_OFFSET_Y - LEVEL_HEIGHT / 2.0) {
-        head_segment.pos.y += LEVEL_HEIGHT;
-    }
+        // Wrap head around screen
+        if (head_segment.pos.x > LEVEL_OFFSET_X + LEVEL_WIDTH / 2.0) {
+            head_segment.pos.x -= LEVEL_WIDTH;
+        }
+        if (head_segment.pos.x < LEVEL_OFFSET_X - LEVEL_WIDTH / 2.0) {
+            head_segment.pos.x += LEVEL_WIDTH;
+        }
+        if (head_segment.pos.y > LEVEL_OFFSET_Y + LEVEL_HEIGHT / 2.0) {
+            head_segment.pos.y -= LEVEL_HEIGHT;
+        }
+        if (head_segment.pos.y < LEVEL_OFFSET_Y - LEVEL_HEIGHT / 2.0) {
+            head_segment.pos.y += LEVEL_HEIGHT;
+        }
 
-    // Track where the head has been
-    position_history.push(.{ .time = current_time, .pos = head_segment.pos, .dir = head_segment.dir }) catch builtin.panic("failed to push to position history buffer", null);
+        // Track where the head has been
+        position_history.push(.{ .time = current_time, .pos = head_segment.pos, .dir = head_segment.dir }) catch builtin.panic("failed to push to position history buffer", null);
+    }
 
     const head_obb = OBB.init(head_segment.pos, head_segment.size, head_segment.dir);
 
@@ -177,16 +186,18 @@ pub fn update(current_time: f64, delta: f64) void {
         }
 
         if (hist_pos_opt) |hist_pos| {
+            if (dead and hist_pos.time < segment_time - SEGMENT_TIME_OFFSET / 2) {
+                cur_segment.show = false;
+            }
             cur_segment.pos = hist_pos.pos;
             cur_segment.dir = hist_pos.dir;
         }
 
         // Check if the head collides with this segment
         const cur_obb = OBB.init(cur_segment.pos, cur_segment.size, cur_segment.dir);
-        if (segment_idx > 1 and cur_obb.collides(&head_obb)) {
-            platform.warn("You crashed into your tail! Oh no!\n", .{});
-            platform.quit();
-            return;
+        if (!dead and segment_idx > 1 and cur_obb.collides(&head_obb)) {
+            dead = true;
+            head_segment.show = false;
         }
 
         prev_segment = cur_segment;
