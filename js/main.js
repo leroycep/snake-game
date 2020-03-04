@@ -113,8 +113,6 @@ fetch("snake-game.wasm")
     });
 
     const onResize = () => {
-      canvas.width = window.innerWidth - 0.02 * window.innerWidth;
-      canvas.height = window.innerHeight - 0.04 * window.innerHeight;
       instance.exports.onResize();
     };
     onResize();
