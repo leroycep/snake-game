@@ -6,15 +6,15 @@ const Cpu = std.Target.Cpu;
 const SITE_DIR = "www";
 
 pub fn build(b: *Builder) void {
-    const target = b.standardTargetOptions(null);
+    const target = b.standardTargetOptions(.{});
     const exe = b.addExecutable("snake-game", "src/main_native.zig");
     exe.setBuildMode(b.standardReleaseOptions());
-    exe.setTheTarget(target);
+    exe.setTarget(target);
     exe.linkSystemLibrary("SDL2");
     exe.addIncludeDir("./c/include/");
     exe.addCSourceFile("./c/src/glad.c", &[_][]const u8{});
     exe.linkLibC();
-    exe.setTargetGLibC(2, 17, 0);
+    //exe.setTargetGLibC(2, 17, 0);
     exe.install();
 
     const tests = b.addTest("src/app.zig");
@@ -27,7 +27,10 @@ pub fn build(b: *Builder) void {
     const wasmOutDir = b.fmt("{}" ++ sep_str ++ SITE_DIR, .{b.install_prefix});
     wasm.setOutputDir(wasmOutDir);
     wasm.setBuildMode(b.standardReleaseOptions());
-    wasm.setTheTarget(.{ .Cross = .{ .cpu = Cpu.baseline(.wasm32), .os = .freestanding, .abi = .none } });
+    wasm.setTarget(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .freestanding,
+    });
 
     const htmlInstall = b.addInstallFile("./index.html", SITE_DIR ++ sep_str ++ "index.html");
     const cssInstall = b.addInstallFile("./index.css", SITE_DIR ++ sep_str ++ "index.css");
