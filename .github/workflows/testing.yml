@@ -1,0 +1,22 @@
+name: Test and Check formatting
+on: [push]
+
+jobs:
+    test:
+        name: Run zig test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: goto-bus-stop/setup-zig@1.2.1
+              with:
+                  version: master
+            - run: zig build test
+    fmt:
+        name: Check zig formatting
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: goto-bus-stop/setup-zig@1.2.1
+              with:
+                  version: master
+            - run: zig fmt --check build.zig ./src/ ./tools/
