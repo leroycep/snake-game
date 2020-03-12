@@ -84,14 +84,14 @@ const js_bottom =
 const funcs = [_]Func{
     Func{
         .name = "getScreenW",
-        .args = &[_]Arg{ },
+        .args = &[_]Arg{},
         .ret = "i32",
         .js =
             \\return gl.drawingBufferWidth;
             },
     Func{
         .name = "getScreenH",
-        .args = &[_]Arg{ },
+        .args = &[_]Arg{},
         .ret = "i32",
         .js =
             \\return gl.drawingBufferHeight;
