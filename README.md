@@ -4,12 +4,17 @@
 
 For building:
 
-- zig `0.5.0+907c5589a`
+- zig (`master` branch
 
-For running the game:
+For running the game in browser:
 
 - A development web server, like `livereload` or [`simple-http-server`][]
 - An up to date web browser
+
+To run it on desktop:
+
+- Install SDL
+- run `zig build run`
 
 [`simple-http-server`]: https://github.com/TheWaWaR/simple-http-server
 
