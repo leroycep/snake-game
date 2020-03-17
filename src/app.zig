@@ -9,6 +9,7 @@ const ring_buffer = @import("ring_buffer.zig");
 const RingBuffer = ring_buffer.RingBuffer;
 const collision = @import("collision.zig");
 const OBB = collision.OBB;
+const screen = @import("screen.zig");
 
 var renderer: Renderer = undefined;
 
@@ -38,6 +39,9 @@ var food_pos: ?Vec2f = null;
 
 var inputs = Inputs{};
 
+var alloc = std.heap.direct_allocator;
+var screen_stack: std.ArrayList(*screen.Screen) = undefined;
+
 /// Keep track of D-Pad status
 const Inputs = struct {
     north: bool = false,
@@ -64,6 +68,10 @@ const Segment = struct {
 
 pub fn onInit() void {
     renderer = Renderer.init();
+
+    screen_stack = std.ArrayList(*screen.Screen).init(alloc);
+    const main_menu = screen.MainMenu.init(alloc) catch unreachable;
+    screen_stack.append(&main_menu.screen) catch unreachable;
 
     addSegment();
 
@@ -94,6 +102,10 @@ pub fn onEvent(event: platform.Event) void {
 }
 
 pub fn update(current_time: f64, delta: f64) void {
+    const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
+
+    current_screen.update(current_time, delta);
+
     // Update food
     if (!dead) {
         if (food_pos) |pos| {
@@ -232,6 +244,8 @@ fn mulMat4(a: []const f32, b: []const f32) [16]f32 {
 }
 
 pub fn render(alpha: f64) void {
+    const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
+
     renderer.setTranslation(camera_pos);
     renderer.begin();
 
@@ -249,6 +263,8 @@ pub fn render(alpha: f64) void {
     if (food_pos) |pos| {
         renderer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
     }
+
+    current_screen.render(&renderer, alpha);
 
     renderer.flush();
     platform.renderPresent();
