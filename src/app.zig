@@ -23,6 +23,7 @@ pub fn onInit() void {
     screen_stack = std.ArrayList(*screen.Screen).init(alloc);
     const main_menu = screen.MainMenu.init(alloc) catch unreachable;
     screen_stack.append(&main_menu.screen) catch unreachable;
+    main_menu.screen.start();
 }
 
 pub fn onEvent(event: platform.Event) void {
@@ -37,14 +38,19 @@ pub fn update(current_time: f64, delta: f64) void {
     const transition_opt = current_screen.update(current_time, delta);
 
     if (transition_opt) |transition| {
+        current_screen.stop();
         switch (transition) {
             .Push => |new_screen| {
                 screen_stack.append(new_screen) catch unreachable;
+                new_screen.start();
             },
             .Replace => |new_screen| {
+                current_screen.deinit();
                 screen_stack.toSlice()[screen_stack.len - 1] = new_screen;
+                new_screen.start();
             },
             .Pop => {
+                current_screen.deinit();
                 _ = screen_stack.pop();
             },
         }

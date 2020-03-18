@@ -21,6 +21,8 @@ pub const Screen = struct {
     onEventFn: fn (*@This(), event: platform.Event) void,
     updateFn: fn (*@This(), time: f64, delta: f64) ?Transition,
     renderFn: fn (*const @This(), renderer: *Renderer, alpha: f64) void,
+    stopFn: ?fn (*@This()) void = null,
+    deinitFn: ?fn (*@This()) void = null,
 
     pub fn start(self: *@This()) void {
         if (self.startFn) |startFn| {
@@ -38,5 +40,17 @@ pub const Screen = struct {
 
     pub fn render(self: *const @This(), renderer: *Renderer, alpha: f64) void {
         self.renderFn(self, renderer, alpha);
+    }
+
+    pub fn stop(self: *@This()) void {
+        if (self.stopFn) |stopFn| {
+            stopFn(self);
+        }
+    }
+
+    pub fn deinit(self: *@This()) void {
+        if (self.deinitFn) |deinitFn| {
+            deinitFn(self);
+        }
     }
 };
