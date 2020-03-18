@@ -15,9 +15,6 @@ const game = @import("game.zig");
 var renderer: Renderer = undefined;
 var snake: game.Snake = undefined;
 
-var camera_pos = Vec2f{ .x = 0, .y = 0 };
-var frames: usize = 0;
-
 var random: std.rand.DefaultPrng = undefined;
 var food_pos: ?Vec2f = null;
 
@@ -103,8 +100,6 @@ pub fn update(current_time: f64, delta: f64) void {
     }
 
     snake.update(current_time, delta);
-
-    frames += 1;
 }
 
 fn mulMat4(a: []const f32, b: []const f32) [16]f32 {
@@ -129,7 +124,6 @@ fn mulMat4(a: []const f32, b: []const f32) [16]f32 {
 pub fn render(alpha: f64) void {
     const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
 
-    renderer.setTranslation(camera_pos);
     renderer.begin();
 
     renderer.pushRect(.{ .x = LEVEL_OFFSET_X, .y = LEVEL_OFFSET_Y }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
