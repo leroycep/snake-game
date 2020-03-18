@@ -10,7 +10,7 @@ jobs:
             - uses: goto-bus-stop/setup-zig@v1
               with:
                   version: master
-            - run: zig build test
+            - run: zig build all
     fmt:
         name: Check zig formatting
         runs-on: ubuntu-latest
