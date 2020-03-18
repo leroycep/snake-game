@@ -150,6 +150,10 @@ pub const Snake = struct {
         };
         self.next_segment_idx += 1;
     }
+
+    pub fn deinit(self: *@This()) void {
+        self.alloc.free(self.position_history.buffer);
+    }
 };
 
 pub const Segment = struct {

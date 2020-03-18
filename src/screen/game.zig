@@ -33,6 +33,7 @@ pub const Game = struct {
                 .onEventFn = onEvent,
                 .updateFn = update,
                 .renderFn = render,
+                .deinitFn = deinit,
             },
 
             .random = std.rand.DefaultPrng.init(1337),
@@ -111,5 +112,12 @@ pub const Game = struct {
         if (self.food_pos) |pos| {
             renderer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
         }
+    }
+
+    pub fn deinit(screenPtr: *Screen) void {
+        const self = @fieldParentPtr(@This(), "screen", screenPtr);
+
+        self.snake.deinit();
+        self.alloc.destroy(self);
     }
 };
