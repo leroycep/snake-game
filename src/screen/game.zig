@@ -24,6 +24,7 @@ pub const Game = struct {
 
     snake: game.Snake,
     food_pos: ?Vec2f = null,
+    quit_pressed: bool = false,
 
     pub fn init(alloc: *std.mem.Allocator) !*@This() {
         const self = try alloc.create(@This());
@@ -49,7 +50,7 @@ pub const Game = struct {
             .Quit => platform.quit(),
             .ScreenResized => |screen_size| platform.glViewport(0, 0, screen_size.x, screen_size.y),
             .KeyDown => |ev| switch (ev.scancode) {
-                .ESCAPE => platform.quit(),
+                .ESCAPE => self.quit_pressed = true,
                 .UP => self.inputs.north = true,
                 .RIGHT => self.inputs.east = true,
                 .DOWN => self.inputs.south = true,
@@ -69,6 +70,12 @@ pub const Game = struct {
 
     pub fn update(screenPtr: *Screen, time: f64, delta: f64) ?screen.Transition {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
+
+        if (self.quit_pressed) {
+            self.quit_pressed = false;
+            const main_menu = screen.MainMenu.init(self.alloc) catch unreachable;
+            return screen.Transition{ .Replace = &main_menu.screen };
+        }
 
         // Update food
         if (!self.snake.dead) {
