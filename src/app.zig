@@ -21,7 +21,7 @@ pub fn onInit() void {
     renderer = Renderer.init();
 
     screen_stack = std.ArrayList(*screen.Screen).init(alloc);
-    const main_menu = screen.Game.init(alloc) catch unreachable;
+    const main_menu = screen.MainMenu.init(alloc) catch unreachable;
     screen_stack.append(&main_menu.screen) catch unreachable;
 }
 
@@ -34,26 +34,21 @@ pub fn onEvent(event: platform.Event) void {
 pub fn update(current_time: f64, delta: f64) void {
     const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
 
-    current_screen.update(current_time, delta);
-}
+    const transition_opt = current_screen.update(current_time, delta);
 
-fn mulMat4(a: []const f32, b: []const f32) [16]f32 {
-    std.debug.assert(a.len == 16);
-    std.debug.assert(b.len == 16);
-
-    var c: [16]f32 = undefined;
-    comptime var i: usize = 0;
-    inline while (i < 4) : (i += 1) {
-        comptime var j: usize = 0;
-        inline while (j < 4) : (j += 1) {
-            c[i * 4 + j] = 0;
-            comptime var k: usize = 0;
-            inline while (k < 4) : (k += 1) {
-                c[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
-            }
+    if (transition_opt) |transition| {
+        switch (transition) {
+            .Push => |new_screen| {
+                screen_stack.append(new_screen) catch unreachable;
+            },
+            .Replace => |new_screen| {
+                screen_stack.toSlice()[screen_stack.len - 1] = new_screen;
+            },
+            .Pop => {
+                _ = screen_stack.pop();
+            },
         }
     }
-    return c;
 }
 
 pub fn render(alpha: f64) void {

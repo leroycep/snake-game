@@ -66,7 +66,7 @@ pub const Game = struct {
         }
     }
 
-    pub fn update(screenPtr: *Screen, time: f64, delta: f64) void {
+    pub fn update(screenPtr: *Screen, time: f64, delta: f64) ?screen.Transition {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
         // Update food
@@ -97,6 +97,8 @@ pub const Game = struct {
         }
 
         self.snake.update(time, delta);
+
+        return null;
     }
 
     pub fn render(screenPtr: *const Screen, renderer: *Renderer, alpha: f64) void {
