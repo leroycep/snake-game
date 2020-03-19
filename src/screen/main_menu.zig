@@ -3,21 +3,30 @@ const screen = @import("../screen.zig");
 const Screen = screen.Screen;
 const platform = @import("../platform.zig");
 const Renderer = @import("../renderer.zig").Renderer;
+const ComponentRenderer = platform.components.ComponentRenderer;
 const Component = platform.components.Component;
 
 const NORMAL_PLAY_PRESSED = 1;
+const HOVER_NORMAL_PLAY = 2;
+
+const Desc = enum {
+    NormalPlay,
+};
 
 pub const MainMenu = struct {
     alloc: *std.mem.Allocator,
     screen: Screen,
 
     dirty: bool = true,
+    component_renderer: ComponentRenderer,
     play_pressed: bool = false,
+    desc: ?Desc = null,
 
     pub fn init(alloc: *std.mem.Allocator) !*@This() {
         const self = try alloc.create(@This());
         self.* = .{
             .alloc = alloc,
+            .component_renderer = try ComponentRenderer.init(alloc),
             .screen = .{
                 .onEventFn = onEvent,
                 .updateFn = update,
@@ -40,6 +49,10 @@ pub const MainMenu = struct {
             },
             .Custom => |eventId| switch (eventId) {
                 NORMAL_PLAY_PRESSED => self.play_pressed = true,
+                HOVER_NORMAL_PLAY => {
+                    self.desc = .NormalPlay;
+                    self.dirty = true;
+                },
                 else => platform.warn("Unknown event id: {}\n", .{eventId}),
             },
             else => {},
@@ -67,19 +80,28 @@ pub const MainMenu = struct {
 
         if (!self.dirty) return;
 
-        platform.renderComponents(&vbox(
+        var description: []const u8 = undefined;
+        if (self.desc) |desc| {
+            description = switch (desc) {
+                .NormalPlay => "Eat as much fruit as you can, but make sure not to hit your tail!",
+            };
+        } else {
+            description = "";
+        }
+
+        self.component_renderer.render(&vbox(
             &[_]Component{
                 text("Snake Game"),
                 box(.{ .grow = 1 }, &[_]Component{
                     vbox(&[_]Component{
-                        button("Normal Play", NORMAL_PLAY_PRESSED),
-                        button("Casual Play", NORMAL_PLAY_PRESSED),
-                        button("Highscores", NORMAL_PLAY_PRESSED),
+                        button("Normal Play", .{ .click = NORMAL_PLAY_PRESSED, .hover = HOVER_NORMAL_PLAY }),
+                        button("Casual Play", .{}),
+                        button("Highscores", .{}),
                     }),
-                    text("Description"),
+                    text(description),
                 }),
             },
-        ));
+        )) catch unreachable;
 
         self.dirty = false;
     }

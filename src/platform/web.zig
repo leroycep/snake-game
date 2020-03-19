@@ -22,26 +22,32 @@ pub const setShaderSource = glShaderSource;
 
 pub fn renderPresent() void {}
 
-const TAG_DIV: u32 = 1;
-const TAG_P: u32 = 2;
-const TAG_BUTTON: u32 = 3;
+pub const TAG_DIV: u32 = 1;
+pub const TAG_P: u32 = 2;
+pub const TAG_BUTTON: u32 = 3;
 
-const CLASS_HORIZONTAL: u32 = 1;
-const CLASS_VERTICAL: u32 = 2;
+pub const CLASS_HORIZONTAL: u32 = 1;
+pub const CLASS_VERTICAL: u32 = 2;
 
-extern fn element_create(tag: u32) u32;
-extern fn element_setTextS(element: u32, textPtr: [*]const u8, textLen: c_uint) void;
-extern fn element_setClickEvent(element: u32, clickEvent: u32) void;
-extern fn element_addClass(element: u32, class: u32) void;
-extern fn element_appendChild(element: u32, child: u32) void;
+pub extern fn element_create(tag: u32) u32;
+pub extern fn element_remove(element: u32) void;
+pub extern fn element_setTextS(element: u32, textPtr: [*]const u8, textLen: c_uint) void;
+
+pub extern fn element_setClickEvent(element: u32, clickEvent: u32) void;
+pub extern fn element_removeClickEvent(element: u32) void;
+pub extern fn element_setHoverEvent(element: u32, hoverEvent: u32) void;
+pub extern fn element_removeHoverEvent(element: u32) void;
+
+pub extern fn element_addClass(element: u32, class: u32) void;
+pub extern fn element_appendChild(element: u32, child: u32) void;
 
 /// Returns the root element
-extern fn element_render_begin() u32;
+pub extern fn element_render_begin() u32;
 
 /// Called to clean up data on JS side
-extern fn element_render_end() void;
+pub extern fn element_render_end() void;
 
-fn element_setText(element: u32, text: []const u8) void {
+pub fn element_setText(element: u32, text: []const u8) void {
     element_setTextS(element, text.ptr, text.len);
 }
 
@@ -68,7 +74,12 @@ pub fn componentToHTML(component: *Component) u32 {
         .Button => |button| {
             const elem = element_create(TAG_BUTTON);
             element_setText(elem, button.text);
-            element_setClickEvent(elem, button.event);
+            if (button.events.click) |click_event| {
+                element_setClickEvent(elem, click_event);
+            }
+            if (button.events.hover) |hover_event| {
+                element_setHoverEvent(elem, hover_event);
+            }
             return elem;
         },
         .Container => |container| {

@@ -7,6 +7,9 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
   const CLASS_VERTICAL = 2;
 
   let elements = [];
+  let unused_ids = [];
+  let clickEvents = {};
+  let hoverEvents = {};
 
   return {
     element_render_begin: () => {
@@ -40,9 +43,17 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       }
       const element = document.createElement(elementStr);
       element.classList.add("component");
-      const id = elements.length;
-      elements.push(element);
+      const id = unused_ids.length > 0 ? unused_ids.pop() : elements.length;
+      elements[id] = element;
       return id;
+    },
+
+    element_remove: elemId => {
+      if (elemId < elements.length && !unused_ids.includes(elemId)) {
+        elements[elemId].remove();
+        elements[elemId] = null;
+        unused_ids.push(elemId);
+      }
     },
 
     element_setTextS: (elemId, textPtr, textLen) => {
@@ -56,9 +67,21 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
     },
 
     element_setClickEvent: (elemId, clickEvent) => {
-      elements[elemId].addEventListener("click", () => {
-        customEventCallback(clickEvent);
-      });
+      clickEvents[elemId] = () => customEventCallback(clickEvent);
+      elements[elemId].addEventListener("click", clickEvents[elemId]);
+    },
+
+    element_removeClickEvent: (elemId, clickEvent) => {
+      elements[elemId].removeEventListener("click", clickEvents[elemId]);
+    },
+
+    element_setHoverEvent: (elemId, hoverEvent) => {
+      hoverEvents[elemId] = () => customEventCallback(hoverEvent);
+      elements[elemId].addEventListener("mouseover", hoverEvents[elemId]);
+    },
+
+    element_removeHoverEvent: (elemId, clickEvent) => {
+      elements[elemId].removeEventListener("click", hoverEvents[elemId]);
     },
 
     element_addClass: (elemId, classNumber) => {
