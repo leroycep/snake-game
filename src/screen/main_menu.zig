@@ -9,6 +9,7 @@ pub const MainMenu = struct {
     alloc: *std.mem.Allocator,
     screen: Screen,
 
+    dirty: bool = true,
     play_pressed: bool = false,
 
     pub fn init(alloc: *std.mem.Allocator) !*@This() {
@@ -49,13 +50,15 @@ pub const MainMenu = struct {
         return null;
     }
 
-    pub fn render(screenPtr: *const Screen, renderer: *Renderer, alpha: f64) void {
+    pub fn render(screenPtr: *Screen, renderer: *Renderer, alpha: f64) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
         const text = platform.components.text;
         const box = platform.components.box;
         const vbox = platform.components.vbox;
         const button = platform.components.button;
+
+        if (!self.dirty) return;
 
         platform.renderComponents(&vbox(
             &[_]Component{
@@ -70,5 +73,7 @@ pub const MainMenu = struct {
                 }),
             },
         ));
+
+        self.dirty = false;
     }
 };
