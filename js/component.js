@@ -1,4 +1,4 @@
-const getComponentsEnv = (componentsRoot, getMemory) => {
+const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
   const TAG_DIV = 1;
   const TAG_P = 2;
   const TAG_BUTTON = 3;
@@ -49,6 +49,12 @@ const getComponentsEnv = (componentsRoot, getMemory) => {
         s += String.fromCharCode(b);
       }
       element.textContent = s;
+    },
+
+    element_setClickEvent: (elemId, clickEvent) => {
+      elements[elemId].addEventListener("click", () => {
+        customEventCallback(clickEvent);
+      });
     },
 
     element_appendChild: (parentElemId, childElemId) => {

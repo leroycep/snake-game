@@ -51,6 +51,12 @@ export fn onResize() void {
     });
 }
 
+export fn onCustomEvent(eventId: u32) void {
+    app.onEvent(.{
+        .Custom = eventId,
+    });
+}
+
 export fn update(current_time: f64, delta: f64) void {
     app.update(current_time, delta);
 }

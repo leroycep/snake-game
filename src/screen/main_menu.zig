@@ -5,6 +5,8 @@ const platform = @import("../platform.zig");
 const Renderer = @import("../renderer.zig").Renderer;
 const Component = platform.components.Component;
 
+const NORMAL_PLAY_PRESSED = 1;
+
 pub const MainMenu = struct {
     alloc: *std.mem.Allocator,
     screen: Screen,
@@ -20,6 +22,7 @@ pub const MainMenu = struct {
                 .onEventFn = onEvent,
                 .updateFn = update,
                 .renderFn = render,
+                .stopFn = stop,
             },
         };
         return self;
@@ -34,6 +37,10 @@ pub const MainMenu = struct {
                 .ESCAPE => platform.quit(),
                 .Z => self.play_pressed = true,
                 else => {},
+            },
+            .Custom => |eventId| switch (eventId) {
+                NORMAL_PLAY_PRESSED => self.play_pressed = true,
+                else => platform.warn("Unknown event id: {}\n", .{eventId}),
             },
             else => {},
         }
@@ -65,9 +72,9 @@ pub const MainMenu = struct {
                 text("Snake Game"),
                 box(.{ .grow = 1 }, &[_]Component{
                     vbox(&[_]Component{
-                        button("Normal Play"),
-                        button("Casual Play"),
-                        button("Highscores"),
+                        button("Normal Play", NORMAL_PLAY_PRESSED),
+                        button("Casual Play", NORMAL_PLAY_PRESSED),
+                        button("Highscores", NORMAL_PLAY_PRESSED),
                     }),
                     text("Description"),
                 }),
@@ -75,5 +82,10 @@ pub const MainMenu = struct {
         ));
 
         self.dirty = false;
+    }
+
+    pub fn stop(screenPtr: *Screen) void {
+        const self = @fieldParentPtr(@This(), "screen", screenPtr);
+        platform.clearComponents();
     }
 };

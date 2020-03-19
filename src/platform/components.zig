@@ -12,6 +12,7 @@ pub const Component = union(ComponentTag) {
 
 pub const Button = struct {
     text: []const u8,
+    event: u32,
 };
 
 pub const Container = struct {
@@ -32,8 +33,8 @@ pub fn text(string: []const u8) Component {
     return Component{ .Text = string };
 }
 
-pub fn button(string: []const u8) Component {
-    return Component{ .Button = .{ .text = string } };
+pub fn button(string: []const u8, event: u32) Component {
+    return Component{ .Button = .{ .text = string, .event = event } };
 }
 
 pub fn box(layout: Layout, children: []Component) Component {

@@ -5,9 +5,15 @@ let canvas = document.getElementById("canvas-webgl");
 let componentsRoot = document.getElementById("components-root");
 var memory;
 
+var globalInstance;
+
+let customEventCallback = eventId => {
+    globalInstance.exports.onCustomEvent(eventId);
+};
+
 let env = {
   ...getWebGLEnv(canvas, () => memory),
-  ...getComponentsEnv(componentsRoot, () => memory),
+  ...getComponentsEnv(componentsRoot, () => memory, customEventCallback),
   consoleLogS: (ptr, len) => {
     const bytes = new Uint8Array(memory.buffer, ptr, len);
     let s = "";
@@ -25,6 +31,7 @@ fetch("snake-game.wasm")
   .then(results => results.instance)
   .then(instance => {
     memory = instance.exports.memory;
+    globalInstance = instance;
     instance.exports.onInit();
 
     const SHOULD_QUIT = instance.exports.QUIT;

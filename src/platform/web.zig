@@ -28,6 +28,7 @@ const TAG_BUTTON: u32 = 3;
 
 extern fn element_create(tag: u32) u32;
 extern fn element_setTextS(element: u32, textPtr: [*]const u8, textLen: c_uint) void;
+extern fn element_setClickEvent(element: u32, clickEvent: u32) void;
 extern fn element_appendChild(element: u32, child: u32) void;
 
 /// Returns the root element
@@ -48,6 +49,11 @@ pub fn renderComponents(rootComponent: *Component) void {
     element_appendChild(rootElement, element);
 }
 
+pub fn clearComponents() void {
+    const rootElement = element_render_begin();
+    element_render_end();
+}
+
 pub fn componentToHTML(component: *Component) u32 {
     switch (component.*) {
         .Text => |text| {
@@ -58,6 +64,7 @@ pub fn componentToHTML(component: *Component) u32 {
         .Button => |button| {
             const elem = element_create(TAG_BUTTON);
             element_setText(elem, button.text);
+            element_setClickEvent(elem, button.event);
             return elem;
         },
         .Container => |container| {
