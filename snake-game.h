@@ -26,6 +26,7 @@ extern uint16_t SCANCODE_W;
 extern uint16_t SCANCODE_A;
 extern uint16_t SCANCODE_S;
 extern uint16_t SCANCODE_D;
+extern uint16_t SCANCODE_Z;
 extern uint16_t SCANCODE_LEFT;
 extern uint16_t SCANCODE_RIGHT;
 extern uint16_t SCANCODE_UP;
