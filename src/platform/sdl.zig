@@ -27,6 +27,10 @@ pub fn logErr(err: Error) Error {
     return err;
 }
 
+pub fn now() u64 {
+    return std.time.milliTimestamp();
+}
+
 pub fn init(screenWidth: i32, screenHeight: i32) void {
     const allocator = std.heap.direct_allocator;
 

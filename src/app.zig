@@ -29,6 +29,7 @@ pub fn onInit() void {
 pub fn onEvent(event: platform.Event) void {
     const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
 
+    platform.warn("new event: {}\n", .{event});
     current_screen.onEvent(event);
 }
 

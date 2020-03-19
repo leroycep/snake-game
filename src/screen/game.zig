@@ -37,7 +37,7 @@ pub const Game = struct {
                 .deinitFn = deinit,
             },
 
-            .random = std.rand.DefaultPrng.init(1337),
+            .random = std.rand.DefaultPrng.init(platform.now()),
             .snake = try game.Snake.init(alloc),
         };
         self.snake.addSegment();

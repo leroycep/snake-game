@@ -12,7 +12,8 @@ let env = {
       s += String.fromCharCode(b);
     }
     console.log(s);
-  }
+  },
+  now_f64: ptr => Date.now(),
 };
 
 fetch("snake-game.wasm")
@@ -66,9 +67,10 @@ fetch("snake-game.wasm")
       if (!instance.exports.hasQuit()) {
         window.requestAnimationFrame(step);
       } else {
-          const quitLabel = document.createElement("p");
-          quitLabel.textContent = "You have quit, game is stopped. Refresh the page to restart the game.";
-          document.querySelector(".container").prepend(quitLabel);
+        const quitLabel = document.createElement("p");
+        quitLabel.textContent =
+          "You have quit, game is stopped. Refresh the page to restart the game.";
+        document.querySelector(".container").prepend(quitLabel);
       }
     }
     window.requestAnimationFrame(step);
@@ -84,6 +86,7 @@ fetch("snake-game.wasm")
       KeyA: ex.SCANCODE_A,
       KeyS: ex.SCANCODE_S,
       KeyD: ex.SCANCODE_D,
+      KeyZ: ex.SCANCODE_Z,
       ArrowLeft: ex.SCANCODE_LEFT,
       ArrowRight: ex.SCANCODE_RIGHT,
       ArrowUp: ex.SCANCODE_UP,
