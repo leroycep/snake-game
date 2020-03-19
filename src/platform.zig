@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 pub usingnamespace @import("platform/common.zig");
+pub const components = @import("platform/components.zig");
 
 pub const is_web = builtin.arch == builtin.Arch.wasm32;
 const web = @import("platform/web.zig");

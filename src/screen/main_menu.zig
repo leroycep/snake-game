@@ -3,6 +3,7 @@ const screen = @import("../screen.zig");
 const Screen = screen.Screen;
 const platform = @import("../platform.zig");
 const Renderer = @import("../renderer.zig").Renderer;
+const Component = platform.components.Component;
 
 pub const MainMenu = struct {
     alloc: *std.mem.Allocator,
@@ -50,8 +51,24 @@ pub const MainMenu = struct {
 
     pub fn render(screenPtr: *const Screen, renderer: *Renderer, alpha: f64) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
-        renderer.begin();
-        renderer.flush();
-        platform.renderPresent();
+
+        const text = platform.components.text;
+        const box = platform.components.box;
+        const vbox = platform.components.vbox;
+        const button = platform.components.button;
+
+        platform.renderComponents(&vbox(
+            &[_]Component{
+                text("Snake Game"),
+                box(.{ .grow = 1 }, &[_]Component{
+                    vbox(&[_]Component{
+                        button("Normal Play"),
+                        button("Casual Play"),
+                        button("Highscores"),
+                    }),
+                    text("Description"),
+                }),
+            },
+        ));
     }
 };

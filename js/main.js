@@ -1,10 +1,13 @@
 import getWebGLEnv from "./webgl.js";
+import getComponentsEnv from "./component.js";
 
 let canvas = document.getElementById("canvas-webgl");
+let componentsRoot = document.getElementById("components-root");
 var memory;
 
 let env = {
   ...getWebGLEnv(canvas, () => memory),
+  ...getComponentsEnv(componentsRoot, () => memory),
   consoleLogS: (ptr, len) => {
     const bytes = new Uint8Array(memory.buffer, ptr, len);
     let s = "";
@@ -13,7 +16,7 @@ let env = {
     }
     console.log(s);
   },
-  now_f64: ptr => Date.now(),
+  now_f64: ptr => Date.now()
 };
 
 fetch("snake-game.wasm")
