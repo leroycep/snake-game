@@ -10,6 +10,8 @@ jobs:
             - uses: goto-bus-stop/setup-zig@v1
               with:
                   version: master
+            - name: Install SDL for native build
+              run: sudo apt-get install libsdl2-dev
             - run: zig build all
     fmt:
         name: Check zig formatting
