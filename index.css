@@ -22,8 +22,16 @@ body {
     height: 100%;
 }
 
+#components-root {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 div.component {
     display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .component.horizontal {
