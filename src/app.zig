@@ -60,12 +60,7 @@ pub fn update(current_time: f64, delta: f64) void {
 pub fn render(alpha: f64) void {
     const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
 
-    renderer.begin();
-
     current_screen.render(&renderer, alpha);
-
-    renderer.flush();
-    platform.renderPresent();
 }
 
 test "" {
