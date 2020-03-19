@@ -13,8 +13,7 @@ pub const Snake = struct {
     dead: bool = false,
     target_head_dir: f32 = 0,
     head_segment: Segment,
-    segments: [MAX_SEGMENTS]?Segment = [_]?Segment{null} ** MAX_SEGMENTS,
-    next_segment_idx: usize = 0,
+    segments: std.ArrayList(Segment),
     tail_segment: Segment,
 
     position_history: RingBuffer(PastPosition),
@@ -28,6 +27,7 @@ pub const Snake = struct {
                 .size = Vec2f{ .x = SNAKE_SEGMENT_LENGTH, .y = SNAKE_HEAD_WIDTH },
                 .dir = 0,
             },
+            .segments = std.ArrayList(Segment).init(alloc),
             .tail_segment = Segment{
                 .pos = Vec2f{ .x = 100, .y = 100 },
                 .size = Vec2f{ .x = SNAKE_TAIL_LENGTH, .y = SNAKE_TAIL_WIDTH },
@@ -79,7 +79,10 @@ pub const Snake = struct {
         var position_history_idx: usize = self.position_history.len() - 1;
         var prev_segment = &self.head_segment;
         while (prev_segment != &self.tail_segment) : (segment_idx += 1) {
-            var cur_segment = if (self.segments[segment_idx] != null) &self.segments[segment_idx].? else &self.tail_segment;
+            var cur_segment = if (segment_idx < self.segments.len)
+                &self.segments.span()[segment_idx]
+            else
+                &self.tail_segment;
 
             var time_offset: f64 = undefined;
             if (cur_segment == &self.tail_segment) {
@@ -128,27 +131,22 @@ pub const Snake = struct {
     }
 
     pub fn render(self: @This(), renderer: *Renderer, alpha: f64) void {
-        var idx: usize = self.next_segment_idx;
+        const segments = self.segments.span();
+        var idx: usize = segments.len;
         self.tail_segment.render(renderer, SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len]);
-        while (idx > 0) {
-            const segment = self.segments[idx - 1].?;
+        while (idx > 0) : (idx -= 1) {
+            const segment = segments[idx - 1];
             segment.render(renderer, SEGMENT_COLORS[idx % SEGMENT_COLORS.len]);
-            idx -= 1;
         }
         self.head_segment.render(renderer, SEGMENT_COLORS[0]);
     }
 
     pub fn addSegment(self: *@This()) void {
-        if (self.next_segment_idx == self.segments.len) {
-            platform.warn("Ran out of space for snake segments\n", .{});
-            return;
-        }
-        self.segments[self.next_segment_idx] = .{
+        self.segments.append(.{
             .pos = self.tail_segment.pos,
             .dir = self.tail_segment.dir,
             .size = .{ .x = SNAKE_SEGMENT_LENGTH, .y = SNAKE_SEGMENT_WIDTH },
-        };
-        self.next_segment_idx += 1;
+        }) catch unreachable;
     }
 
     pub fn deinit(self: *@This()) void {
