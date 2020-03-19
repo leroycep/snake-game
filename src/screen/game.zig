@@ -112,6 +112,8 @@ pub const Game = struct {
     pub fn render(screenPtr: *const Screen, renderer: *Renderer, alpha: f64) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
+        renderer.begin();
+
         renderer.pushRect(.{ .x = LEVEL_OFFSET_X, .y = LEVEL_OFFSET_Y }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
 
         self.snake.render(renderer, alpha);
@@ -119,6 +121,9 @@ pub const Game = struct {
         if (self.food_pos) |pos| {
             renderer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
         }
+
+        renderer.flush();
+        platform.renderPresent();
     }
 
     pub fn deinit(screenPtr: *Screen) void {

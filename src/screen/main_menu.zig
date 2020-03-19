@@ -50,5 +50,8 @@ pub const MainMenu = struct {
 
     pub fn render(screenPtr: *const Screen, renderer: *Renderer, alpha: f64) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
+        renderer.begin();
+        renderer.flush();
+        platform.renderPresent();
     }
 };
