@@ -211,10 +211,14 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *Component) Ren
             });
 
             var rendered_children = std.ArrayList(RenderedComponent).init(alloc);
-            for (container.children) |*child| {
+            for (container.children) |*child, idx| {
                 const childElem = try componentToRendered(alloc, child);
                 web.element_appendChild(elem, childElem.element);
                 try rendered_children.append(childElem);
+
+                if (container.layout.grow) |grow| {
+                    web.element_setGrow(childElem.element, grow[idx]);
+                }
             }
 
             return RenderedComponent{

@@ -76,6 +76,7 @@ pub const MainMenu = struct {
         const text = platform.components.text;
         const box = platform.components.box;
         const vbox = platform.components.vbox;
+        const hbox = platform.components.hbox;
         const button = platform.components.button;
 
         if (!self.dirty) return;
@@ -89,10 +90,11 @@ pub const MainMenu = struct {
             description = "";
         }
 
-        self.component_renderer.render(&vbox(
+        self.component_renderer.render(&box(
+            .{ .orientation = .Vertical, .grow = &[_]u32{ 0, 1 } },
             &[_]Component{
                 text("Snake Game"),
-                box(.{ .grow = 1 }, &[_]Component{
+                hbox(&[_]Component{
                     vbox(&[_]Component{
                         button("Normal Play", .{ .click = NORMAL_PLAY_PRESSED, .hover = HOVER_NORMAL_PLAY }),
                         button("Casual Play", .{}),

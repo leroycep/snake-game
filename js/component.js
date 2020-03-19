@@ -100,6 +100,10 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       elements[elemId].classList.add(classStr);
     },
 
+    element_setGrow: (elemId, grow) => {
+      elements[elemId].style.flexGrow = grow;
+    },
+
     element_appendChild: (parentElemId, childElemId) => {
       const parentElem = elements[parentElemId];
       const childElem = elements[childElemId];

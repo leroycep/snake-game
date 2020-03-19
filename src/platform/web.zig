@@ -40,6 +40,7 @@ pub extern fn element_removeHoverEvent(element: u32) void;
 
 pub extern fn element_addClass(element: u32, class: u32) void;
 pub extern fn element_appendChild(element: u32, child: u32) void;
+pub extern fn element_setGrow(element: u32, grow: u32) void;
 
 /// Returns the root element
 pub extern fn element_render_begin() u32;

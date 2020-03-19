@@ -18,14 +18,21 @@ body {
 
 #canvas-webgl, #components-root {
     position: absolute;
-    width: 100%;
-    height: 100%;
+    width: 640px;
+    height: 480px;
 }
 
 #components-root {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
+    flex-direction: column;
+}
+
+#components-root > * {
+    width: 100%;
+    height: 100%;
+    flex-grow: 1;
 }
 
 div.component {
