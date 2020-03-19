@@ -26,9 +26,13 @@ const TAG_DIV: u32 = 1;
 const TAG_P: u32 = 2;
 const TAG_BUTTON: u32 = 3;
 
+const CLASS_HORIZONTAL: u32 = 1;
+const CLASS_VERTICAL: u32 = 2;
+
 extern fn element_create(tag: u32) u32;
 extern fn element_setTextS(element: u32, textPtr: [*]const u8, textLen: c_uint) void;
 extern fn element_setClickEvent(element: u32, clickEvent: u32) void;
+extern fn element_addClass(element: u32, class: u32) void;
 extern fn element_appendChild(element: u32, child: u32) void;
 
 /// Returns the root element
@@ -69,6 +73,10 @@ pub fn componentToHTML(component: *Component) u32 {
         },
         .Container => |container| {
             const elem = element_create(TAG_DIV);
+            element_addClass(elem, switch (container.layout.orientation) {
+                .Horizontal => CLASS_HORIZONTAL,
+                .Vertical => CLASS_VERTICAL,
+            });
             for (container.children) |*child| {
                 const childElem = componentToHTML(child);
                 element_appendChild(elem, childElem);

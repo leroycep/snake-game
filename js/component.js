@@ -3,6 +3,9 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
   const TAG_P = 2;
   const TAG_BUTTON = 3;
 
+  const CLASS_HORIZONTAL = 1;
+  const CLASS_VERTICAL = 2;
+
   let elements = [];
 
   return {
@@ -36,6 +39,7 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
           break;
       }
       const element = document.createElement(elementStr);
+      element.classList.add("component");
       const id = elements.length;
       elements.push(element);
       return id;
@@ -55,6 +59,22 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       elements[elemId].addEventListener("click", () => {
         customEventCallback(clickEvent);
       });
+    },
+
+    element_addClass: (elemId, classNumber) => {
+      let classStr = "";
+      switch (classNumber) {
+        case CLASS_HORIZONTAL:
+          classStr = "horizontal";
+          break;
+        case CLASS_VERTICAL:
+          classStr = "vertical";
+          break;
+        default:
+          console.log("Unknown class number", classNumber);
+          return;
+      }
+      elements[elemId].classList.add(classStr);
     },
 
     element_appendChild: (parentElemId, childElemId) => {
