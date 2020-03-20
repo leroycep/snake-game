@@ -1,12 +1,10 @@
 const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
-  const TAG_DIV = 1;
-  const TAG_P = 2;
-  const TAG_BUTTON = 3;
+  const TAGS = {
+    1: "div",
+    2: "p",
+    3: "button"
+  };
 
-  const CLASS_HORIZONTAL = 1;
-  const CLASS_VERTICAL = 2;
-  const CLASS_FLEX = 3;
-  const CLASS_GRID = 4;
   const CLASSES = {
     1: "horizontal",
     2: "vertical",
@@ -54,21 +52,10 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
     element_render_end: () => (elements = []),
 
     element_create: tag => {
-      let elementStr = "";
-      switch (tag) {
-        case TAG_DIV:
-          elementStr = "div";
-          break;
-        case TAG_P:
-          elementStr = "p";
-          break;
-        case TAG_BUTTON:
-          elementStr = "button";
-          break;
-        default:
-          console.log("Unknown tag number, rendering component as a div");
-          elementStr = "div";
-          break;
+      let elementStr = TAGS[tag];
+      if (elementStr === undefined) {
+        console.log("Unknown tag number, rendering component as a div");
+        elementStr = "div";
       }
       const element = document.createElement(elementStr);
       element.classList.add("component");
