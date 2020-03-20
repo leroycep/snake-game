@@ -97,10 +97,14 @@ pub const MainMenu = struct {
             },
         });
 
+        const button_grid = Layout.grid(.{
+            .rows = &[_]u32{ 1, 1, 1 },
+        });
+
         const components = box(grid, &[_]Component{
             text("Snake Game"),
             text(description),
-            box(Layout.flex(.Vertical), &[_]Component{
+            box(button_grid, &[_]Component{
                 button("Normal Play", .{ .click = NORMAL_PLAY_PRESSED, .hover = HOVER_NORMAL_PLAY }),
                 button("Casual Play", .{}),
                 button("Highscores", .{}),

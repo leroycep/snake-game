@@ -233,7 +233,7 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
                 web.element_appendChild(elem, childElem.element);
                 try rendered_children.append(childElem);
 
-                if (container.layout == .Grid) {
+                if (container.layout == .Grid and container.layout.Grid.areas != null) {
                     web.element_setGridArea(childElem.element, idx);
                 }
             }
