@@ -28,6 +28,8 @@ pub const TAG_BUTTON: u32 = 3;
 
 pub const CLASS_HORIZONTAL: u32 = 1;
 pub const CLASS_VERTICAL: u32 = 2;
+pub const CLASS_FLEX: u32 = 3;
+pub const CLASS_GRID: u32 = 4;
 
 pub extern fn element_create(tag: u32) u32;
 pub extern fn element_remove(element: u32) void;
@@ -40,7 +42,10 @@ pub extern fn element_removeHoverEvent(element: u32) void;
 
 pub extern fn element_addClass(element: u32, class: u32) void;
 pub extern fn element_appendChild(element: u32, child: u32) void;
-pub extern fn element_setGrow(element: u32, grow: u32) void;
+pub extern fn element_setGridArea(element: u32, grid_area: u32) void;
+pub extern fn element_setGridTemplateAreasS(element: u32, grid_areas: [*]const u32, width: u32, height: u32) void;
+pub extern fn element_setGridTemplateRowsS(element: u32, cols: [*]const u32, len: u32) void;
+pub extern fn element_setGridTemplateColumnsS(element: u32, rows: [*]const u32, len: u32) void;
 
 /// Returns the root element
 pub extern fn element_render_begin() u32;
@@ -50,6 +55,27 @@ pub extern fn element_render_end() void;
 
 pub fn element_setText(element: u32, text: []const u8) void {
     element_setTextS(element, text.ptr, text.len);
+}
+
+pub fn element_setGridTemplateRows(element: u32, cols: []const u32) void {
+    element_setGridTemplateRowsS(element, cols.ptr, cols.len);
+}
+pub fn element_setGridTemplateColumns(element: u32, rows: []const u32) void {
+    element_setGridTemplateColumnsS(element, rows.ptr, rows.len);
+}
+
+
+pub fn element_setGridTemplateAreas(element: u32, grid_areas: [][]const usize) void {
+    const ARBITRARY_BUFFER_SIZE = 1024;
+    const width = grid_areas.len;
+    const height = grid_areas[0].len;
+    var areas: [ARBITRARY_BUFFER_SIZE]usize = undefined;
+    for (grid_areas) |row, y| {
+        for (row) |area, x| {
+            areas[y * width + x] = area;
+        }
+    }
+    element_setGridTemplateAreasS(element, &areas, width, height);
 }
 
 pub fn renderComponents(rootComponent: *Component) void {

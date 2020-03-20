@@ -5,11 +5,40 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
 
   const CLASS_HORIZONTAL = 1;
   const CLASS_VERTICAL = 2;
+  const CLASS_FLEX = 3;
+  const CLASS_GRID = 4;
+  const CLASSES = {
+    1: "horizontal",
+    2: "vertical",
+    3: "flex",
+    4: "grid"
+  };
 
   let elements = [];
   let unused_ids = [];
   let clickEvents = {};
   let hoverEvents = {};
+
+  const encodeArea = areaInt => {
+    const CIPHER = {
+      "0": "a",
+      "1": "b",
+      "2": "c",
+      "3": "d",
+      "4": "e",
+      "5": "f",
+      "6": "g",
+      "7": "h",
+      "8": "i",
+      "9": "j"
+    };
+    let str = "";
+    let rawStr = areaInt.toString();
+    for (let c of rawStr) {
+      str += CIPHER[c];
+    }
+    return str;
+  };
 
   return {
     element_render_begin: () => {
@@ -85,23 +114,54 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
     },
 
     element_addClass: (elemId, classNumber) => {
-      let classStr = "";
-      switch (classNumber) {
-        case CLASS_HORIZONTAL:
-          classStr = "horizontal";
-          break;
-        case CLASS_VERTICAL:
-          classStr = "vertical";
-          break;
-        default:
-          console.log("Unknown class number", classNumber);
-          return;
+      let classStr = CLASSES[classNumber];
+      if (classStr === undefined) {
+        console.log("Unknown class number", classNumber);
+        return;
       }
       elements[elemId].classList.add(classStr);
     },
 
-    element_setGrow: (elemId, grow) => {
-      elements[elemId].style.flexGrow = grow;
+    element_setGridArea: (elemId, grid_area) => {
+      elements[elemId].style.gridArea = encodeArea(grid_area);
+    },
+
+    element_setGridTemplateAreasS: (elemId, templatePtr, width, height) => {
+      let templateStr = "";
+      const areaInts = new Uint32Array(
+        getMemory().buffer,
+        templatePtr,
+        width * height
+      );
+      for (let j = 0; j < height; j += 1) {
+        templateStr += '"';
+        for (let i = 0; i < width; i += 1) {
+          templateStr += encodeArea(areaInts[j * width + i]);
+          templateStr += " ";
+        }
+        templateStr += '"';
+      }
+      elements[elemId].style.gridTemplateAreas = templateStr;
+    },
+
+    element_setGridTemplateRowsS: (elemId, colsPtr, colsLen) => {
+      const numbers = new Uint32Array(getMemory().buffer, colsPtr, colsLen);
+      let s = "";
+      for (const num of numbers) {
+        s += num;
+        s += "fr ";
+      }
+      elements[elemId].style.gridTemplateRows = s;
+    },
+
+    element_setGridTemplateColumnsS: (elemId, colsPtr, colsLen) => {
+      const numbers = new Uint32Array(getMemory().buffer, colsPtr, colsLen);
+      let s = "";
+      for (const num of numbers) {
+        s += num;
+        s += "fr ";
+      }
+      elements[elemId].style.gridTemplateColumns = s;
     },
 
     element_appendChild: (parentElemId, childElemId) => {

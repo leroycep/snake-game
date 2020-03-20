@@ -35,16 +35,20 @@ body {
     flex-grow: 1;
 }
 
-div.component {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 .component.horizontal {
     flex-direction: row;
 }
 
 .component.vertical {
     flex-direction: column;
+}
+
+.component.flex {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.component.grid {
+    display: grid;
 }

@@ -20,7 +20,7 @@ pub const ComponentRenderer = struct {
 
     pub fn start() void {}
 
-    pub fn render(self: *@This(), new_component: *Component) !void {
+    pub fn render(self: *@This(), new_component: *const Component) !void {
         if (self.current_component) |*current_component| {
             try current_component.differences(new_component);
         } else {
@@ -29,8 +29,6 @@ pub const ComponentRenderer = struct {
             web.element_appendChild(rootElement, self.current_component.?.element);
         }
     }
-
-    pub fn toRendered(self: *@This(), new_component: *Component) RenderedComponent {}
 
     pub fn stop(self: *@This()) void {
         self.current_components = null;
@@ -63,7 +61,7 @@ const RenderedComponent = struct {
         self.component.deinit(self);
     }
 
-    pub fn differences(self: *@This(), component: *Component) RenderingError!void {
+    pub fn differences(self: *@This(), component: *const Component) RenderingError!void {
         if (@as(ComponentTag, self.component) != @as(ComponentTag, component.*)) {
             self.remove();
             self.* = try componentToRendered(self.alloc, component);
@@ -170,7 +168,7 @@ pub const Container = struct {
 
 pub const RenderingError = std.mem.Allocator.Error;
 
-pub fn componentToRendered(alloc: *std.mem.Allocator, component: *Component) RenderingError!RenderedComponent {
+pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Component) RenderingError!RenderedComponent {
     switch (component.*) {
         .Text => |text| {
             const elem = web.element_create(web.TAG_P);
@@ -205,10 +203,29 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *Component) Ren
         },
         .Container => |container| {
             const elem = web.element_create(web.TAG_DIV);
-            web.element_addClass(elem, switch (container.layout.orientation) {
-                .Horizontal => web.CLASS_HORIZONTAL,
-                .Vertical => web.CLASS_VERTICAL,
-            });
+
+            // Add some classes to the div
+            switch (container.layout) {
+                .Flex => |orientation| {
+                    web.element_addClass(elem, web.CLASS_FLEX);
+                    web.element_addClass(elem, switch (orientation) {
+                        .Horizontal => web.CLASS_HORIZONTAL,
+                        .Vertical => web.CLASS_VERTICAL,
+                    });
+                },
+                .Grid => |template| {
+                    web.element_addClass(elem, web.CLASS_GRID);
+                    if (template.areas) |areas| {
+                        web.element_setGridTemplateAreas(elem, areas);
+                    }
+                    if (template.rows) |rows| {
+                        web.element_setGridTemplateRows(elem, rows);
+                    }
+                    if (template.columns) |cols| {
+                        web.element_setGridTemplateColumns(elem, cols);
+                    }
+                },
+            }
 
             var rendered_children = std.ArrayList(RenderedComponent).init(alloc);
             for (container.children) |*child, idx| {
@@ -216,8 +233,8 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *Component) Ren
                 web.element_appendChild(elem, childElem.element);
                 try rendered_children.append(childElem);
 
-                if (container.layout.grow) |grow| {
-                    web.element_setGrow(childElem.element, grow[idx]);
+                if (container.layout == .Grid) {
+                    web.element_setGridArea(childElem.element, idx);
                 }
             }
 
