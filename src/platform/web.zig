@@ -2,6 +2,7 @@ usingnamespace @import("common.zig");
 pub usingnamespace @import("webgl.zig");
 pub usingnamespace @import("webgl_generated.zig");
 const Component = @import("components.zig").Component;
+const warn = @import("../platform.zig").warn;
 
 pub extern fn consoleLogS(_: [*]const u8, _: c_uint) void;
 
@@ -64,11 +65,10 @@ pub fn element_setGridTemplateColumns(element: u32, rows: []const u32) void {
     element_setGridTemplateColumnsS(element, rows.ptr, rows.len);
 }
 
-
 pub fn element_setGridTemplateAreas(element: u32, grid_areas: [][]const usize) void {
     const ARBITRARY_BUFFER_SIZE = 1024;
-    const width = grid_areas.len;
-    const height = grid_areas[0].len;
+    const width = grid_areas[0].len;
+    const height = grid_areas.len;
     var areas: [ARBITRARY_BUFFER_SIZE]usize = undefined;
     for (grid_areas) |row, y| {
         for (row) |area, x| {
