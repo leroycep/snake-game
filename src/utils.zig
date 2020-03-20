@@ -1,3 +1,4 @@
+const std = @import("std");
 pub const OptionTag = enum {
     Some,
     None,
@@ -9,16 +10,7 @@ pub fn Option(comptime T: type) type {
         None: void,
 
         pub fn eql(self: *const @This(), other: *const @This()) bool {
-            return switch (self.*) {
-                .None => switch (other.*) {
-                    .None => true,
-                    .Some => false,
-                },
-                .Some => |self_some| switch (other.*) {
-                    .None => false,
-                    .Some => |other_some| self_some == other_some,
-                },
-            };
+            return std.meta.eql(self.*, other.*);
         }
     };
 }

@@ -17,32 +17,6 @@ pub const Component = union(ComponentTag) {
 pub const Events = struct {
     click: ?u32 = null,
     hover: ?u32 = null,
-
-    pub fn eql(self: *const Events, other: *const Events) bool {
-        if (self.click) |click| {
-            if (other.click) |other_click| {
-                if (click != other_click) {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else if (other.click) |other_click| {
-            return false;
-        }
-        if (self.hover) |hover| {
-            if (other.hover) |other_hover| {
-                if (hover != other_hover) {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else if (other.hover) |other_hover| {
-            return false;
-        }
-        return true;
-    }
 };
 
 pub const Button = struct {

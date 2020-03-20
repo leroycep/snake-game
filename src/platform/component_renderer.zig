@@ -89,7 +89,7 @@ const RenderedComponent = struct {
                     web.element_setText(self.element, other_button.text);
                 }
 
-                if (!self_button.events.eql(&other_button.events)) {
+                if (!std.meta.eql(self_button.events, other_button.events)) {
                     self_button.update_events(self, other_button.events);
                 }
             },
