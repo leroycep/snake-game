@@ -42,6 +42,7 @@ pub extern fn element_setHoverEvent(element: u32, hoverEvent: u32) void;
 pub extern fn element_removeHoverEvent(element: u32) void;
 
 pub extern fn element_addClass(element: u32, class: u32) void;
+pub extern fn element_clearClasses(element: u32) void;
 pub extern fn element_appendChild(element: u32, child: u32) void;
 pub extern fn element_setGridArea(element: u32, grid_area: u32) void;
 pub extern fn element_setGridTemplateAreasS(element: u32, grid_areas: [*]const u32, width: u32, height: u32) void;

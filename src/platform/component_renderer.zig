@@ -86,6 +86,10 @@ const RenderedComponent = struct {
             },
 
             .Container => |*self_container| {
+                if (!std.meta.eql(self_container.layout, other.Container.layout)) {
+                    web.element_clearClasses(self.element);
+                    apply_layout(self.element, &other.Container.layout);
+                }
                 var changed = other.Container.children.len != self_container.children.len;
                 var idx: usize = 0;
                 while (!changed and idx < other.Container.children.len) : (idx += 1) {
@@ -191,27 +195,7 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
             const elem = web.element_create(web.TAG_DIV);
 
             // Add some classes to the div
-            switch (container.layout) {
-                .Flex => |orientation| {
-                    web.element_addClass(elem, web.CLASS_FLEX);
-                    web.element_addClass(elem, switch (orientation) {
-                        .Horizontal => web.CLASS_HORIZONTAL,
-                        .Vertical => web.CLASS_VERTICAL,
-                    });
-                },
-                .Grid => |template| {
-                    web.element_addClass(elem, web.CLASS_GRID);
-                    if (template.areas) |areas| {
-                        web.element_setGridTemplateAreas(elem, areas);
-                    }
-                    if (template.rows) |rows| {
-                        web.element_setGridTemplateRows(elem, rows);
-                    }
-                    if (template.columns) |cols| {
-                        web.element_setGridTemplateColumns(elem, cols);
-                    }
-                },
-            }
+            apply_layout(elem, &container.layout);
 
             var rendered_children = std.ArrayList(RenderedComponent).init(alloc);
             for (container.children) |*child, idx| {
@@ -234,6 +218,30 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
                     },
                 },
             };
+        },
+    }
+}
+
+pub fn apply_layout(element: u32, layout: *const Layout) void {
+    switch (layout.*) {
+        .Flex => |orientation| {
+            web.element_addClass(element, web.CLASS_FLEX);
+            web.element_addClass(element, switch (orientation) {
+                .Horizontal => web.CLASS_HORIZONTAL,
+                .Vertical => web.CLASS_VERTICAL,
+            });
+        },
+        .Grid => |template| {
+            web.element_addClass(element, web.CLASS_GRID);
+            if (template.areas) |areas| {
+                web.element_setGridTemplateAreas(element, areas);
+            }
+            if (template.rows) |rows| {
+                web.element_setGridTemplateRows(element, rows);
+            }
+            if (template.columns) |cols| {
+                web.element_setGridTemplateColumns(element, cols);
+            }
         },
     }
 }
