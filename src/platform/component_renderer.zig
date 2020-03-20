@@ -61,50 +61,36 @@ const RenderedComponent = struct {
         self.component.deinit(self);
     }
 
-    pub fn differences(self: *@This(), component: *const Component) RenderingError!void {
-        if (@as(ComponentTag, self.component) != @as(ComponentTag, component.*)) {
+    pub fn differences(self: *@This(), other: *const Component) RenderingError!void {
+        if (@as(ComponentTag, self.component) != @as(ComponentTag, other.*)) {
             self.remove();
-            self.* = try componentToRendered(self.alloc, component);
+            self.* = try componentToRendered(self.alloc, other);
             return;
         }
         // Tags must be equal
         switch (self.component) {
             .Text => |self_text| {
-                const other_text = switch (component.*) {
-                    .Text => |other| other,
-                    else => unreachable,
-                };
-                if (!std.mem.eql(u8, self_text, other_text)) {
-                    web.element_setText(self.element, other_text);
+                if (!std.mem.eql(u8, self_text, other.Text)) {
+                    web.element_setText(self.element, other.Text);
                 }
             },
 
             .Button => |*self_button| {
-                const other_button = switch (component.*) {
-                    .Button => |*other| other,
-                    else => unreachable,
-                };
-
-                if (!std.mem.eql(u8, self_button.text, other_button.text)) {
-                    web.element_setText(self.element, other_button.text);
+                if (!std.mem.eql(u8, self_button.text, other.Button.text)) {
+                    web.element_setText(self.element, other.Button.text);
                 }
 
-                if (!std.meta.eql(self_button.events, other_button.events)) {
-                    self_button.update_events(self, other_button.events);
+                if (!std.meta.eql(self_button.events, other.Button.events)) {
+                    self_button.update_events(self, other.Button.events);
                 }
             },
 
             .Container => |*self_container| {
-                const other_container = switch (component.*) {
-                    .Container => |*other| other,
-                    else => unreachable,
-                };
-
-                var changed = other_container.children.len != self_container.children.len;
+                var changed = other.Container.children.len != self_container.children.len;
                 var idx: usize = 0;
-                while (!changed and idx < other_container.children.len) : (idx += 1) {
+                while (!changed and idx < other.Container.children.len) : (idx += 1) {
                     const self_child = &self_container.children.span()[idx];
-                    const other_child = &other_container.children[idx];
+                    const other_child = &other.Container.children[idx];
                     if (@as(ComponentTag, self_child.component) == @as(ComponentTag, other_child.*)) {
                         try self_child.differences(other_child);
                     } else {
@@ -115,7 +101,7 @@ const RenderedComponent = struct {
                 if (changed) {
                     // Clear children and rebuild
                     self_container.removeChildren();
-                    for (other_container.children) |*other_child| {
+                    for (other.Container.children) |*other_child| {
                         const childElem = try componentToRendered(self.alloc, other_child);
                         web.element_appendChild(self.element, childElem.element);
                         self_container.children.append(childElem) catch unreachable;
