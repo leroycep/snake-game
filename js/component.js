@@ -109,6 +109,10 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       elements[elemId].classList.add(classStr);
     },
 
+    element_clearClasses: (elemId) => {
+      elements[elemId].classList.clear();
+    },
+
     element_setGridArea: (elemId, grid_area) => {
       elements[elemId].style.gridArea = encodeArea(grid_area);
     },
