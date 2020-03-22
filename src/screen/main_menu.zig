@@ -131,7 +131,7 @@ pub const MainMenu = struct {
 
         const grid = Layout.grid(.{
             .columns = &[_]u32{ 1, 1 },
-            .rows = &[_]u32{ 1, 1 },
+            .rows = &[_]u32{ 1, 3 },
             .areas = &[_][]usize{
                 &[_]usize{ 0, 0 },
                 &[_]usize{ 2, 1 },
@@ -141,10 +141,11 @@ pub const MainMenu = struct {
         const button_grid = Layout.grid(.{
             .rows = &[_]u32{ 1, 1, 1 },
         });
+        const centered = Layout.flex(.Horizontal);
 
         const components = box(grid, &[_]Component{
-            text("Snake Game"),
-            text(description),
+            box(centered, &[_]Component{text("Snake Game")}),
+            box(centered, &[_]Component{text(description)}),
             box(button_grid, &[_]Component{
                 button("Normal Play", NORMAL_PLAY_EVENTS),
                 button("Casual Play", CASUAL_PLAY_EVENTS),
