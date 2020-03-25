@@ -125,22 +125,6 @@ const Button = struct {
     text: []const u8,
     events: Events,
 
-    pub fn update_events(self: *@This(), component: *const RenderedComponent, new_events: Events) void {
-        if (new_events.click) |new_click| {
-            element_setClickEvent(component.element, new_click);
-        } else if (self.events.click) |old_click| {
-            element_removeClickEvent(component.element);
-        }
-        self.events.click = new_events.click;
-
-        if (new_events.hover) |new_hover| {
-            element_setHoverEvent(component.element, new_hover);
-        } else if (self.events.hover) |old_hover| {
-            element_removeHoverEvent(component.element);
-        }
-        self.events.hover = new_events.hover;
-    }
-
     pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
         const size = Vec2f{
             .x = @intToFloat(f32, space.w) / 2,
@@ -175,14 +159,27 @@ pub const Container = struct {
     pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
         switch (self.layout) {
             .Flex => |orientation| {
-                const space_per_component = @divTrunc(space.w, @intCast(i32, self.children.span().len));
+                const axisSize = switch (orientation) {
+                    .Horizontal => space.w,
+                    .Vertical => space.h,
+                };
+                const space_per_component = @divTrunc(axisSize, @intCast(i32, self.children.span().len));
                 for (self.children.span()) |*child, idx| {
-                    child.render(renderer, Rect{
-                        .x = space.x + space_per_component * @intCast(i32, idx),
-                        .y = space.y,
-                        .w = space_per_component,
-                        .h = space.h,
-                    });
+                    const childSpace = switch (orientation) {
+                        .Horizontal => Rect{
+                            .x = space.x + space_per_component * @intCast(i32, idx),
+                            .y = space.y,
+                            .w = space_per_component,
+                            .h = space.h,
+                        },
+                        .Vertical => Rect{
+                            .x = space.x,
+                            .y = space.y + space_per_component * @intCast(i32, idx),
+                            .w = space.w,
+                            .h = space_per_component,
+                        },
+                    };
+                    child.render(renderer, childSpace);
                 }
             },
             .Grid => |template| {
