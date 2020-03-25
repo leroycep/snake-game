@@ -1,7 +1,5 @@
 const std = @import("std");
 
-pub const ComponentRenderer = @import("component_renderer.zig").ComponentRenderer;
-
 pub const ComponentTag = enum {
     Text,
     Container,

@@ -1,11 +1,11 @@
 const std = @import("std");
-const components = @import("components.zig");
+const components = @import("../components.zig");
 const Component = components.Component;
 const ComponentTag = components.ComponentTag;
 const Layout = components.Layout;
 const Events = components.Events;
 
-const web = @import("web.zig");
+const web = @import("../web.zig");
 
 pub const ComponentRenderer = struct {
     alloc: *std.mem.Allocator,

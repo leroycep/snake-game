@@ -3,6 +3,7 @@ pub usingnamespace @import("web/webgl.zig");
 pub usingnamespace @import("web/webgl_generated.zig");
 const Component = @import("components.zig").Component;
 const warn = @import("../platform.zig").warn;
+pub const ComponentRenderer = @import("web/component_renderer.zig").ComponentRenderer;
 
 pub extern fn consoleLogS(_: [*]const u8, _: c_uint) void;
 
