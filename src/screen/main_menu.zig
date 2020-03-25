@@ -1,4 +1,5 @@
 const std = @import("std");
+usingnamespace @import("../constants.zig");
 const screen = @import("../screen.zig");
 const Screen = screen.Screen;
 const platform = @import("../platform.zig");
@@ -114,6 +115,9 @@ pub const MainMenu = struct {
 
     pub fn render(screenPtr: *Screen, context: *Context, alpha: f64) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
+
+        const screen_size = platform.Vec2f.fromVeci(&platform.getScreenSize());
+        context.renderer.pushRect(screen_size.scalMul(0.5), screen_size, LEVEL_COLOR, 0);
 
         if (self.dependencies.is_changed(self.desc)) {
             self.update_gui(context);

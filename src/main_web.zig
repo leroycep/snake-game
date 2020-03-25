@@ -71,5 +71,7 @@ export fn update(current_time: f64, delta: f64) void {
 }
 
 export fn render(alpha: f64) void {
+    context.renderer.begin();
     app.render(&context, alpha);
+    context.renderer.flush();
 }
