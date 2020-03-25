@@ -118,8 +118,14 @@ pub const MainMenu = struct {
     pub fn render(screenPtr: *Screen, renderer: *Renderer, alpha: f64) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
-        if (!self.dependencies.is_changed(self.desc)) return;
+        if (self.dependencies.is_changed(self.desc)) {
+            self.update_gui();
+            self.dependencies.update(self.desc);
+        }
+        self.component_renderer.render();
+    }
 
+    fn update_gui(self: *@This()) void {
         const text = platform.components.text;
         const box = platform.components.box;
         const button = platform.components.button;
@@ -152,9 +158,7 @@ pub const MainMenu = struct {
                 button("Highscores", HIGHSCORES_EVENTS),
             }),
         });
-        self.component_renderer.render(&components) catch unreachable;
-
-        self.dependencies.update(self.desc);
+        self.component_renderer.update(&components) catch unreachable;
     }
 
     pub fn stop(screenPtr: *Screen) void {

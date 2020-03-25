@@ -74,7 +74,7 @@ pub const ComponentRenderer = struct {
 
     pub fn start() void {}
 
-    pub fn render(self: *@This(), new_component: *const Component) !void {
+    pub fn update(self: *@This(), new_component: *const Component) !void {
         if (self.current_component) |*current_component| {
             try current_component.differences(new_component);
         } else {
@@ -83,6 +83,8 @@ pub const ComponentRenderer = struct {
             element_appendChild(rootElement, self.current_component.?.element);
         }
     }
+
+    pub fn render(self: *@This()) void {}
 
     pub fn stop(self: *@This()) void {
         element_render_clear();
