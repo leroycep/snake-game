@@ -4,6 +4,7 @@ const panic = std.debug.panic;
 const c = @import("sdl/c.zig");
 usingnamespace @import("common.zig");
 pub usingnamespace c;
+pub const ComponentRenderer = @import("sdl/component_renderer.zig").ComponentRenderer;
 
 var window: ?*c.SDL_Window = null;
 var context: ?c.SDL_GLContext = null;

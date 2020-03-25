@@ -11,12 +11,11 @@ const OBB = collision.OBB;
 const screen = @import("screen.zig");
 const game = @import("game.zig");
 
-var alloc = std.heap.direct_allocator;
 var screen_stack: std.ArrayList(*screen.Screen) = undefined;
 
 pub fn onInit(context: *platform.Context) void {
-    screen_stack = std.ArrayList(*screen.Screen).init(alloc);
-    const main_menu = screen.MainMenu.init(alloc) catch unreachable;
+    screen_stack = std.ArrayList(*screen.Screen).init(context.alloc);
+    const main_menu = screen.MainMenu.init(context.alloc) catch unreachable;
     screen_stack.append(&main_menu.screen) catch unreachable;
     main_menu.screen.start(context);
 }
@@ -51,7 +50,7 @@ pub fn update(context: *platform.Context, current_time: f64, delta: f64) void {
     }
 }
 
-pub fn render(context: *platform.Context,  alpha: f64) void {
+pub fn render(context: *platform.Context, alpha: f64) void {
     const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
 
     current_screen.render(context, alpha);

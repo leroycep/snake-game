@@ -1,76 +1,53 @@
+const builtin = @import("builtin");
 const std = @import("std");
+usingnamespace @import("c.zig");
+
+pub const sdl = @import("../sdl.zig");
 const components = @import("../components.zig");
 const Component = components.Component;
 const ComponentTag = components.ComponentTag;
 const Layout = components.Layout;
 const Events = components.Events;
 
-pub const TAG_DIV: u32 = 1;
-pub const TAG_P: u32 = 2;
-pub const TAG_BUTTON: u32 = 3;
-
-pub const CLASS_HORIZONTAL: u32 = 1;
-pub const CLASS_VERTICAL: u32 = 2;
-pub const CLASS_FLEX: u32 = 3;
-pub const CLASS_GRID: u32 = 4;
-
-pub extern fn element_create(tag: u32) u32;
-pub extern fn element_remove(element: u32) void;
-pub extern fn element_setTextS(element: u32, textPtr: [*]const u8, textLen: c_uint) void;
-
-pub extern fn element_setClickEvent(element: u32, clickEvent: u32) void;
-pub extern fn element_removeClickEvent(element: u32) void;
-pub extern fn element_setHoverEvent(element: u32, hoverEvent: u32) void;
-pub extern fn element_removeHoverEvent(element: u32) void;
-
-pub extern fn element_addClass(element: u32, class: u32) void;
-pub extern fn element_clearClasses(element: u32) void;
-pub extern fn element_appendChild(element: u32, child: u32) void;
-pub extern fn element_setGridArea(element: u32, grid_area: u32) void;
-pub extern fn element_setGridTemplateAreasS(element: u32, grid_areas: [*]const u32, width: u32, height: u32) void;
-pub extern fn element_setGridTemplateRowsS(element: u32, cols: [*]const u32, len: u32) void;
-pub extern fn element_setGridTemplateColumnsS(element: u32, rows: [*]const u32, len: u32) void;
-
-/// Returns the root element
-pub extern fn element_render_begin() u32;
-
-/// Called to clean up data on JS side
-pub extern fn element_render_clear() void;
-
-pub fn element_setText(element: u32, text: []const u8) void {
-    element_setTextS(element, text.ptr, text.len);
-}
-
-pub fn element_setGridTemplateRows(element: u32, cols: []const u32) void {
-    element_setGridTemplateRowsS(element, cols.ptr, cols.len);
-}
-pub fn element_setGridTemplateColumns(element: u32, rows: []const u32) void {
-    element_setGridTemplateColumnsS(element, rows.ptr, rows.len);
-}
-
-pub fn element_setGridTemplateAreas(element: u32, grid_areas: [][]const usize) void {
-    const ARBITRARY_BUFFER_SIZE = 1024;
-    const width = grid_areas[0].len;
-    const height = grid_areas.len;
-    var areas: [ARBITRARY_BUFFER_SIZE]usize = undefined;
-    for (grid_areas) |row, y| {
-        for (row) |area, x| {
-            areas[y * width + x] = area;
-        }
+const MASK = if (builtin.endian == .Big)
+    .{
+        .r = 0xFF000000,
+        .g = 0x00FF0000,
+        .b = 0x0000FF00,
+        .a = 0x000000FF,
     }
-    element_setGridTemplateAreasS(element, &areas, width, height);
+else
+    .{
+        .r = 0x000000FF,
+        .g = 0x0000FF00,
+        .b = 0x00FF0000,
+        .a = 0xFF000000,
+    };
+
+fn rgba(r: u8, g: u8, b: u8, a: u8) u32 {
+    if (builtin.endian == .Big) {
+        return @shlExact(@as(u32, r), 24) | @shlExact(@as(u32, g), 16) | @shlExact(@as(u32, b), 8) | a;
+    } else {
+        return @shlExact(@as(u32, a), 24) | @shlExact(@as(u32, b), 16) | @shlExact(@as(u32, g), 8) | r;
+    }
 }
 
 pub const ComponentRenderer = struct {
     alloc: *std.mem.Allocator,
     root_element: ?u32 = null,
     current_component: ?RenderedComponent = null,
+    surface: *SDL_Surface,
 
     pub fn init(alloc: *std.mem.Allocator) !@This() {
+        const screen_size = sdl.getScreenSize();
+        const surface = SDL_CreateRGBSurface(0, screen_size.x, screen_size.y, 8, MASK.r, MASK.g, MASK.b, MASK.a) orelse return error.FailedToCreateSurface;
         return @This(){
             .alloc = alloc,
+            .surface = surface,
         };
     }
+
+    pub fn start() void {}
 
     pub fn update(self: *@This(), new_component: *const Component) !void {
         if (self.current_component) |*current_component| {
@@ -82,15 +59,21 @@ pub const ComponentRenderer = struct {
         }
     }
 
-    pub fn clear(self: *@This()) void {
-        element_render_clear();
+    pub fn render(self: *@This()) void {}
+
+    pub fn stop(self: *@This()) void {
+        sdl.sdlAssertZero(SDL_FillRect(self.surface, null, rgba(0, 0, 0, 1)));
         self.current_component = null;
+    }
+
+    pub fn deinit(self: *@This()) void {
+        SDL_FreeSurface(self.SDL_Surface);
     }
 };
 
 const RenderedComponent = struct {
     alloc: *std.mem.Allocator,
-    element: u32,
+    rect: SDL_Rect,
     component: union(ComponentTag) {
         Text: []const u8,
         Button: Button,
@@ -106,7 +89,6 @@ const RenderedComponent = struct {
     },
 
     pub fn remove(self: *@This()) void {
-        element_remove(self.element);
         self.component.deinit(self);
     }
 
@@ -167,6 +149,16 @@ const RenderedComponent = struct {
             },
         }
     }
+
+    pub fn render(self: *@This(), space: SDL_Rect) void {
+        switch (self.component) {
+            .Text => |self_text| {},
+
+            .Button => |*self_button| self_button.render(),
+
+            .Container => |*self_container| self_container.render(space),
+        }
+    }
 };
 
 const Button = struct {
@@ -206,6 +198,23 @@ pub const Container = struct {
             child.deinit();
         }
         self.children.deinit();
+    }
+
+    pub fn render(self: *@This(), space: SDL_Rect) void {
+        switch (self.layout) {
+            .Flex => |orientation| {
+                const space_per_component = space.w / self.children.span().len;
+                for (self.children.span()) |child, idx| {
+                    child.render(SDL_Rect{
+                        .x = space.x + space_per_component * idx,
+                        .y = space.y,
+                        .w = space_per_component,
+                        .h = space.h,
+                    });
+                }
+            },
+            .Grid => {},
+        }
     }
 };
 

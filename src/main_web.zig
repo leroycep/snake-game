@@ -1,6 +1,7 @@
 const app = @import("app.zig");
 const constants = @import("constants.zig");
 const platform = @import("platform.zig");
+const std = @import("std");
 
 export const SCANCODE_ESCAPE = @enumToInt(platform.Scancode.ESCAPE);
 export const SCANCODE_W = @enumToInt(platform.Scancode.W);
@@ -19,8 +20,11 @@ export const TICK_DELTA_SECONDS = constants.TICK_DELTA_SECONDS;
 var context: platform.Context = undefined;
 
 export fn onInit() void {
+    const alloc = std.heap.direct_allocator;
     context = platform.Context{
+        .alloc = alloc,
         .renderer = platform.Renderer.init(),
+        .component_renderer = platform.ComponentRenderer.init(alloc) catch unreachable,
     };
     app.onInit(&context);
 }

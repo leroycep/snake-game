@@ -38,5 +38,15 @@ fn warnWeb(comptime fmt: []const u8, args: var) void {
 }
 
 pub const Context = struct {
+    alloc: *std.mem.Allocator,
     renderer: Renderer,
+    component_renderer: ComponentRenderer,
+
+    pub fn updateComponent(self: *@This(), component: *const components.Component) !void {
+        return self.component_renderer.update(component);
+    }
+
+    pub fn clearComponent(self: *@This()) void {
+        self.component_renderer.clear();
+    }
 };

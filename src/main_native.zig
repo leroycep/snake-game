@@ -8,7 +8,12 @@ pub fn main() !void {
     platform.init(constants.VIEWPORT_WIDTH, constants.VIEWPORT_HEIGHT);
     defer platform.deinit();
 
-    var context = platform.Context{ .renderer = platform.Renderer.init() };
+    const alloc = std.heap.direct_allocator;
+    var context = platform.Context{
+        .alloc = alloc,
+        .renderer = platform.Renderer.init(),
+        .component_renderer = try platform.ComponentRenderer.init(alloc),
+    };
 
     app.onInit(&context);
 

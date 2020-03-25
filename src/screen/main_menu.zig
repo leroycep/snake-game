@@ -3,8 +3,6 @@ const screen = @import("../screen.zig");
 const Screen = screen.Screen;
 const platform = @import("../platform.zig");
 const Context = platform.Context;
-const Renderer = platform.Renderer;
-const ComponentRenderer = platform.ComponentRenderer;
 const Component = platform.components.Component;
 const Layout = platform.components.Layout;
 const Events = platform.components.Events;
@@ -63,7 +61,6 @@ pub const MainMenu = struct {
     screen: Screen,
 
     dirty: bool = true,
-    component_renderer: ComponentRenderer,
     play_pressed: bool = false,
     desc: Option(Desc) = Option(Desc){ .None = {} },
     dependencies: utils.Dependencies(Option(Desc)),
@@ -72,7 +69,6 @@ pub const MainMenu = struct {
         const self = try alloc.create(@This());
         self.* = .{
             .alloc = alloc,
-            .component_renderer = try ComponentRenderer.init(alloc),
             .dependencies = utils.Dependencies(Option(Desc)).init(),
             .screen = .{
                 .onEventFn = onEvent,
@@ -123,7 +119,6 @@ pub const MainMenu = struct {
             self.update_gui(context);
             self.dependencies.update(self.desc);
         }
-        self.component_renderer.render();
     }
 
     fn update_gui(self: *@This(), context: *Context) void {
@@ -159,11 +154,11 @@ pub const MainMenu = struct {
                 button("Highscores", HIGHSCORES_EVENTS),
             }),
         });
-        self.component_renderer.update(&components) catch unreachable;
+        context.updateComponent(&components) catch unreachable;
     }
 
     pub fn stop(screenPtr: *Screen, context: *Context) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
-        self.component_renderer.stop();
+        context.clearComponent();
     }
 };
