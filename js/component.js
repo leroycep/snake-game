@@ -38,18 +38,26 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
     return str;
   };
 
+  const clearAllComponents = () => {
+    // Clear all elements from root component
+    while (componentsRoot.firstChild) {
+      componentsRoot.removeChild(componentsRoot.firstChild);
+    }
+  };
+
   return {
     element_render_begin: () => {
-      // Clear all elements from root component
-      while (componentsRoot.firstChild) {
-        componentsRoot.removeChild(componentsRoot.firstChild);
-      }
+      clearAllComponents();
       // Create an id for the zig code to reference
       const id = elements.length;
       elements.push(componentsRoot);
       return id;
     },
-    element_render_end: () => (elements = []),
+
+    element_render_clear: () => {
+      clearAllComponents();
+      elements = [];
+    },
 
     element_create: tag => {
       let elementStr = TAGS[tag];
@@ -109,7 +117,7 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       elements[elemId].classList.add(classStr);
     },
 
-    element_clearClasses: (elemId) => {
+    element_clearClasses: elemId => {
       elements[elemId].classList.clear();
     },
 

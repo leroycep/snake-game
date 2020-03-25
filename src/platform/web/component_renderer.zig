@@ -5,7 +5,61 @@ const ComponentTag = components.ComponentTag;
 const Layout = components.Layout;
 const Events = components.Events;
 
-const web = @import("../web.zig");
+pub const TAG_DIV: u32 = 1;
+pub const TAG_P: u32 = 2;
+pub const TAG_BUTTON: u32 = 3;
+
+pub const CLASS_HORIZONTAL: u32 = 1;
+pub const CLASS_VERTICAL: u32 = 2;
+pub const CLASS_FLEX: u32 = 3;
+pub const CLASS_GRID: u32 = 4;
+
+pub extern fn element_create(tag: u32) u32;
+pub extern fn element_remove(element: u32) void;
+pub extern fn element_setTextS(element: u32, textPtr: [*]const u8, textLen: c_uint) void;
+
+pub extern fn element_setClickEvent(element: u32, clickEvent: u32) void;
+pub extern fn element_removeClickEvent(element: u32) void;
+pub extern fn element_setHoverEvent(element: u32, hoverEvent: u32) void;
+pub extern fn element_removeHoverEvent(element: u32) void;
+
+pub extern fn element_addClass(element: u32, class: u32) void;
+pub extern fn element_clearClasses(element: u32) void;
+pub extern fn element_appendChild(element: u32, child: u32) void;
+pub extern fn element_setGridArea(element: u32, grid_area: u32) void;
+pub extern fn element_setGridTemplateAreasS(element: u32, grid_areas: [*]const u32, width: u32, height: u32) void;
+pub extern fn element_setGridTemplateRowsS(element: u32, cols: [*]const u32, len: u32) void;
+pub extern fn element_setGridTemplateColumnsS(element: u32, rows: [*]const u32, len: u32) void;
+
+/// Returns the root element
+pub extern fn element_render_begin() u32;
+
+/// Called to clean up data on JS side
+pub extern fn element_render_clear() void;
+
+pub fn element_setText(element: u32, text: []const u8) void {
+    element_setTextS(element, text.ptr, text.len);
+}
+
+pub fn element_setGridTemplateRows(element: u32, cols: []const u32) void {
+    element_setGridTemplateRowsS(element, cols.ptr, cols.len);
+}
+pub fn element_setGridTemplateColumns(element: u32, rows: []const u32) void {
+    element_setGridTemplateColumnsS(element, rows.ptr, rows.len);
+}
+
+pub fn element_setGridTemplateAreas(element: u32, grid_areas: [][]const usize) void {
+    const ARBITRARY_BUFFER_SIZE = 1024;
+    const width = grid_areas[0].len;
+    const height = grid_areas.len;
+    var areas: [ARBITRARY_BUFFER_SIZE]usize = undefined;
+    for (grid_areas) |row, y| {
+        for (row) |area, x| {
+            areas[y * width + x] = area;
+        }
+    }
+    element_setGridTemplateAreasS(element, &areas, width, height);
+}
 
 pub const ComponentRenderer = struct {
     alloc: *std.mem.Allocator,
@@ -24,14 +78,15 @@ pub const ComponentRenderer = struct {
         if (self.current_component) |*current_component| {
             try current_component.differences(new_component);
         } else {
-            const rootElement = web.element_render_begin();
+            const rootElement = element_render_begin();
             self.current_component = try componentToRendered(self.alloc, new_component);
-            web.element_appendChild(rootElement, self.current_component.?.element);
+            element_appendChild(rootElement, self.current_component.?.element);
         }
     }
 
     pub fn stop(self: *@This()) void {
-        self.current_components = null;
+        element_render_clear();
+        self.current_component = null;
     }
 };
 
@@ -53,7 +108,7 @@ const RenderedComponent = struct {
     },
 
     pub fn remove(self: *@This()) void {
-        web.element_remove(self.element);
+        element_remove(self.element);
         self.component.deinit(self);
     }
 
@@ -71,13 +126,13 @@ const RenderedComponent = struct {
         switch (self.component) {
             .Text => |self_text| {
                 if (!std.mem.eql(u8, self_text, other.Text)) {
-                    web.element_setText(self.element, other.Text);
+                    element_setText(self.element, other.Text);
                 }
             },
 
             .Button => |*self_button| {
                 if (!std.mem.eql(u8, self_button.text, other.Button.text)) {
-                    web.element_setText(self.element, other.Button.text);
+                    element_setText(self.element, other.Button.text);
                 }
 
                 if (!std.meta.eql(self_button.events, other.Button.events)) {
@@ -87,7 +142,7 @@ const RenderedComponent = struct {
 
             .Container => |*self_container| {
                 if (!std.meta.eql(self_container.layout, other.Container.layout)) {
-                    web.element_clearClasses(self.element);
+                    element_clearClasses(self.element);
                     apply_layout(self.element, &other.Container.layout);
                 }
                 var changed = other.Container.children.len != self_container.children.len;
@@ -107,7 +162,7 @@ const RenderedComponent = struct {
                     self_container.removeChildren();
                     for (other.Container.children) |*other_child| {
                         const childElem = try componentToRendered(self.alloc, other_child);
-                        web.element_appendChild(self.element, childElem.element);
+                        element_appendChild(self.element, childElem.element);
                         self_container.children.append(childElem) catch unreachable;
                     }
                 }
@@ -122,16 +177,16 @@ const Button = struct {
 
     pub fn update_events(self: *@This(), component: *const RenderedComponent, new_events: Events) void {
         if (new_events.click) |new_click| {
-            web.element_setClickEvent(component.element, new_click);
+            element_setClickEvent(component.element, new_click);
         } else if (self.events.click) |old_click| {
-            web.element_removeClickEvent(component.element);
+            element_removeClickEvent(component.element);
         }
         self.events.click = new_events.click;
 
         if (new_events.hover) |new_hover| {
-            web.element_setHoverEvent(component.element, new_hover);
+            element_setHoverEvent(component.element, new_hover);
         } else if (self.events.hover) |old_hover| {
-            web.element_removeHoverEvent(component.element);
+            element_removeHoverEvent(component.element);
         }
         self.events.hover = new_events.hover;
     }
@@ -161,8 +216,8 @@ pub const RenderingError = std.mem.Allocator.Error;
 pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Component) RenderingError!RenderedComponent {
     switch (component.*) {
         .Text => |text| {
-            const elem = web.element_create(web.TAG_P);
-            web.element_setText(elem, text);
+            const elem = element_create(TAG_P);
+            element_setText(elem, text);
             return RenderedComponent{
                 .alloc = alloc,
                 .element = elem,
@@ -172,13 +227,13 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
             };
         },
         .Button => |button| {
-            const elem = web.element_create(web.TAG_BUTTON);
-            web.element_setText(elem, button.text);
+            const elem = element_create(TAG_BUTTON);
+            element_setText(elem, button.text);
             if (button.events.click) |click_event| {
-                web.element_setClickEvent(elem, click_event);
+                element_setClickEvent(elem, click_event);
             }
             if (button.events.hover) |hover_event| {
-                web.element_setHoverEvent(elem, hover_event);
+                element_setHoverEvent(elem, hover_event);
             }
             return RenderedComponent{
                 .alloc = alloc,
@@ -192,7 +247,7 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
             };
         },
         .Container => |container| {
-            const elem = web.element_create(web.TAG_DIV);
+            const elem = element_create(TAG_DIV);
 
             // Add some classes to the div
             apply_layout(elem, &container.layout);
@@ -200,11 +255,11 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
             var rendered_children = std.ArrayList(RenderedComponent).init(alloc);
             for (container.children) |*child, idx| {
                 const childElem = try componentToRendered(alloc, child);
-                web.element_appendChild(elem, childElem.element);
+                element_appendChild(elem, childElem.element);
                 try rendered_children.append(childElem);
 
                 if (container.layout == .Grid and container.layout.Grid.areas != null) {
-                    web.element_setGridArea(childElem.element, idx);
+                    element_setGridArea(childElem.element, idx);
                 }
             }
 
@@ -225,22 +280,22 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
 pub fn apply_layout(element: u32, layout: *const Layout) void {
     switch (layout.*) {
         .Flex => |orientation| {
-            web.element_addClass(element, web.CLASS_FLEX);
-            web.element_addClass(element, switch (orientation) {
-                .Horizontal => web.CLASS_HORIZONTAL,
-                .Vertical => web.CLASS_VERTICAL,
+            element_addClass(element, CLASS_FLEX);
+            element_addClass(element, switch (orientation) {
+                .Horizontal => CLASS_HORIZONTAL,
+                .Vertical => CLASS_VERTICAL,
             });
         },
         .Grid => |template| {
-            web.element_addClass(element, web.CLASS_GRID);
+            element_addClass(element, CLASS_GRID);
             if (template.areas) |areas| {
-                web.element_setGridTemplateAreas(element, areas);
+                element_setGridTemplateAreas(element, areas);
             }
             if (template.rows) |rows| {
-                web.element_setGridTemplateRows(element, rows);
+                element_setGridTemplateRows(element, rows);
             }
             if (template.columns) |cols| {
-                web.element_setGridTemplateColumns(element, cols);
+                element_setGridTemplateColumns(element, cols);
             }
         },
     }

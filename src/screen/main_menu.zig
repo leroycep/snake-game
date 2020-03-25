@@ -159,6 +159,6 @@ pub const MainMenu = struct {
 
     pub fn stop(screenPtr: *Screen) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
-        platform.clearComponents();
+        self.component_renderer.stop();
     }
 };
