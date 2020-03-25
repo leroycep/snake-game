@@ -2,6 +2,10 @@ const builtin = @import("builtin");
 const std = @import("std");
 usingnamespace @import("c.zig");
 
+pub const Renderer = @import("../renderer.zig").Renderer;
+const common = @import("../common.zig");
+const Rect = common.Rect;
+const Vec2f = common.Vec2f;
 pub const sdl = @import("../sdl.zig");
 const components = @import("../components.zig");
 const Component = components.Component;
@@ -34,35 +38,32 @@ fn rgba(r: u8, g: u8, b: u8, a: u8) u32 {
 
 pub const ComponentRenderer = struct {
     alloc: *std.mem.Allocator,
-    root_element: ?u32 = null,
     current_component: ?RenderedComponent = null,
-    surface: *SDL_Surface,
 
     pub fn init(alloc: *std.mem.Allocator) !@This() {
-        const screen_size = sdl.getScreenSize();
-        const surface = SDL_CreateRGBSurface(0, screen_size.x, screen_size.y, 8, MASK.r, MASK.g, MASK.b, MASK.a) orelse return error.FailedToCreateSurface;
         return @This(){
             .alloc = alloc,
-            .surface = surface,
         };
     }
 
-    pub fn start() void {}
-
     pub fn update(self: *@This(), new_component: *const Component) !void {
-        if (self.current_component) |*current_component| {
-            try current_component.differences(new_component);
-        } else {
-            const rootElement = element_render_begin();
-            self.current_component = try componentToRendered(self.alloc, new_component);
-            element_appendChild(rootElement, self.current_component.?.element);
+        self.current_component = try componentToRendered(self.alloc, new_component);
+    }
+
+    pub fn render(self: *@This(), renderer: *Renderer) void {
+        if (self.current_component) |*component| {
+            const screen_size = sdl.getScreenSize();
+            const space = Rect{
+                .x = 0,
+                .y = 0,
+                .w = screen_size.x,
+                .h = screen_size.y,
+            };
+            component.render(renderer, space);
         }
     }
 
-    pub fn render(self: *@This()) void {}
-
-    pub fn stop(self: *@This()) void {
-        sdl.sdlAssertZero(SDL_FillRect(self.surface, null, rgba(0, 0, 0, 1)));
+    pub fn clear(self: *@This()) void {
         self.current_component = null;
     }
 
@@ -73,15 +74,14 @@ pub const ComponentRenderer = struct {
 
 const RenderedComponent = struct {
     alloc: *std.mem.Allocator,
-    rect: SDL_Rect,
     component: union(ComponentTag) {
-        Text: []const u8,
+        Text: Text,
         Button: Button,
         Container: Container,
 
         pub fn deinit(self: *@This(), component: *RenderedComponent) void {
             switch (self.*) {
-                .Text => |text| component.alloc.free(text),
+                .Text => |text| component.alloc.free(text.text),
                 .Button => |button| component.alloc.free(button.text),
                 .Container => |*container| container.deinit(component),
             }
@@ -96,68 +96,28 @@ const RenderedComponent = struct {
         self.component.deinit(self);
     }
 
-    pub fn differences(self: *@This(), other: *const Component) RenderingError!void {
-        if (@as(ComponentTag, self.component) != @as(ComponentTag, other.*)) {
-            self.remove();
-            self.* = try componentToRendered(self.alloc, other);
-            return;
-        }
-        // Tags must be equal
+    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
         switch (self.component) {
-            .Text => |self_text| {
-                if (!std.mem.eql(u8, self_text, other.Text)) {
-                    element_setText(self.element, other.Text);
-                }
-            },
-
-            .Button => |*self_button| {
-                if (!std.mem.eql(u8, self_button.text, other.Button.text)) {
-                    element_setText(self.element, other.Button.text);
-                }
-
-                if (!std.meta.eql(self_button.events, other.Button.events)) {
-                    self_button.update_events(self, other.Button.events);
-                }
-            },
-
-            .Container => |*self_container| {
-                if (!std.meta.eql(self_container.layout, other.Container.layout)) {
-                    element_clearClasses(self.element);
-                    apply_layout(self.element, &other.Container.layout);
-                }
-                var changed = other.Container.children.len != self_container.children.len;
-                var idx: usize = 0;
-                while (!changed and idx < other.Container.children.len) : (idx += 1) {
-                    const self_child = &self_container.children.span()[idx];
-                    const other_child = &other.Container.children[idx];
-                    if (@as(ComponentTag, self_child.component) == @as(ComponentTag, other_child.*)) {
-                        try self_child.differences(other_child);
-                    } else {
-                        changed = true;
-                    }
-                }
-
-                if (changed) {
-                    // Clear children and rebuild
-                    self_container.removeChildren();
-                    for (other.Container.children) |*other_child| {
-                        const childElem = try componentToRendered(self.alloc, other_child);
-                        element_appendChild(self.element, childElem.element);
-                        self_container.children.append(childElem) catch unreachable;
-                    }
-                }
-            },
+            .Text => |*self_text| self_text.render(renderer, space),
+            .Button => |*self_button| self_button.render(renderer, space),
+            .Container => |*self_container| self_container.render(renderer, space),
         }
     }
+};
 
-    pub fn render(self: *@This(), space: SDL_Rect) void {
-        switch (self.component) {
-            .Text => |self_text| {},
+const Text = struct {
+    text: []const u8,
 
-            .Button => |*self_button| self_button.render(),
-
-            .Container => |*self_container| self_container.render(space),
-        }
+    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
+        const size = Vec2f{
+            .x = @intToFloat(f32, space.w),
+            .y = @intToFloat(f32, space.h),
+        };
+        const center = (Vec2f{
+            .x = @intToFloat(f32, space.x),
+            .y = @intToFloat(f32, space.y),
+        }).add(&size.scalMul(0.5));
+        renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
     }
 };
 
@@ -180,6 +140,18 @@ const Button = struct {
         }
         self.events.hover = new_events.hover;
     }
+
+    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
+        const size = Vec2f{
+            .x = @intToFloat(f32, space.w) / 2,
+            .y = @intToFloat(f32, space.h) / 2,
+        };
+        const center = (Vec2f{
+            .x = @intToFloat(f32, space.x),
+            .y = @intToFloat(f32, space.y),
+        }).add(&size);
+        renderer.pushRect(center, size, .{ .r = 255, .g = 255, .b = 255 }, 0);
+    }
 };
 
 pub const Container = struct {
@@ -200,20 +172,31 @@ pub const Container = struct {
         self.children.deinit();
     }
 
-    pub fn render(self: *@This(), space: SDL_Rect) void {
+    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
         switch (self.layout) {
             .Flex => |orientation| {
-                const space_per_component = space.w / self.children.span().len;
-                for (self.children.span()) |child, idx| {
-                    child.render(SDL_Rect{
-                        .x = space.x + space_per_component * idx,
+                const space_per_component = @divTrunc(space.w, @intCast(i32, self.children.span().len));
+                for (self.children.span()) |*child, idx| {
+                    child.render(renderer, Rect{
+                        .x = space.x + space_per_component * @intCast(i32, idx),
                         .y = space.y,
                         .w = space_per_component,
                         .h = space.h,
                     });
                 }
             },
-            .Grid => {},
+            .Grid => |template| {
+                // TODO: actually do grid layout
+                const space_per_component = @divTrunc(space.w, @intCast(i32, self.children.span().len));
+                for (self.children.span()) |*child, idx| {
+                    child.render(renderer, Rect{
+                        .x = space.x + space_per_component * @intCast(i32, idx),
+                        .y = space.y,
+                        .w = space_per_component,
+                        .h = space.h,
+                    });
+                }
+            },
         }
     }
 };
@@ -223,28 +206,16 @@ pub const RenderingError = std.mem.Allocator.Error;
 pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Component) RenderingError!RenderedComponent {
     switch (component.*) {
         .Text => |text| {
-            const elem = element_create(TAG_P);
-            element_setText(elem, text);
             return RenderedComponent{
                 .alloc = alloc,
-                .element = elem,
                 .component = .{
-                    .Text = try std.mem.dupe(alloc, u8, text),
+                    .Text = .{ .text = try std.mem.dupe(alloc, u8, text) },
                 },
             };
         },
         .Button => |button| {
-            const elem = element_create(TAG_BUTTON);
-            element_setText(elem, button.text);
-            if (button.events.click) |click_event| {
-                element_setClickEvent(elem, click_event);
-            }
-            if (button.events.hover) |hover_event| {
-                element_setHoverEvent(elem, hover_event);
-            }
             return RenderedComponent{
                 .alloc = alloc,
-                .element = elem,
                 .component = .{
                     .Button = .{
                         .text = try std.mem.dupe(alloc, u8, button.text),
@@ -254,25 +225,14 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
             };
         },
         .Container => |container| {
-            const elem = element_create(TAG_DIV);
-
-            // Add some classes to the div
-            apply_layout(elem, &container.layout);
-
             var rendered_children = std.ArrayList(RenderedComponent).init(alloc);
             for (container.children) |*child, idx| {
                 const childElem = try componentToRendered(alloc, child);
-                element_appendChild(elem, childElem.element);
                 try rendered_children.append(childElem);
-
-                if (container.layout == .Grid and container.layout.Grid.areas != null) {
-                    element_setGridArea(childElem.element, idx);
-                }
             }
 
             return RenderedComponent{
                 .alloc = alloc,
-                .element = elem,
                 .component = .{
                     .Container = .{
                         .layout = container.layout,
@@ -280,30 +240,6 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
                     },
                 },
             };
-        },
-    }
-}
-
-pub fn apply_layout(element: u32, layout: *const Layout) void {
-    switch (layout.*) {
-        .Flex => |orientation| {
-            element_addClass(element, CLASS_FLEX);
-            element_addClass(element, switch (orientation) {
-                .Horizontal => CLASS_HORIZONTAL,
-                .Vertical => CLASS_VERTICAL,
-            });
-        },
-        .Grid => |template| {
-            element_addClass(element, CLASS_GRID);
-            if (template.areas) |areas| {
-                element_setGridTemplateAreas(element, areas);
-            }
-            if (template.rows) |rows| {
-                element_setGridTemplateRows(element, rows);
-            }
-            if (template.columns) |cols| {
-                element_setGridTemplateColumns(element, cols);
-            }
         },
     }
 }

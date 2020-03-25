@@ -134,7 +134,7 @@ pub const Renderer = struct {
         self.vertIdx = 0;
         self.indIdx = 0;
 
-        platform.glClearColor(1, 1, 1, 1);
+        platform.glClearColor(0, 0, 0, 1);
         platform.glClear(platform.GL_COLOR_BUFFER_BIT);
     }
 

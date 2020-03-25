@@ -48,6 +48,12 @@ pub fn main() !void {
         // then alpha will be equal to 0.5
         const alpha = accumulator / TICK_DELTA;
 
+        context.renderer.begin();
+
         app.render(&context, alpha);
+        context.component_renderer.render(&context.renderer);
+
+        context.renderer.flush();
+        platform.renderPresent();
     }
 }
