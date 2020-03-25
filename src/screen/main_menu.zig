@@ -2,7 +2,8 @@ const std = @import("std");
 const screen = @import("../screen.zig");
 const Screen = screen.Screen;
 const platform = @import("../platform.zig");
-const Renderer = @import("../renderer.zig").Renderer;
+const Context = platform.Context;
+const Renderer = platform.Renderer;
 const ComponentRenderer = platform.ComponentRenderer;
 const Component = platform.components.Component;
 const Layout = platform.components.Layout;
@@ -83,7 +84,7 @@ pub const MainMenu = struct {
         return self;
     }
 
-    pub fn onEvent(screenPtr: *Screen, event: platform.Event) void {
+    pub fn onEvent(screenPtr: *Screen, context: *Context, event: platform.Event) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
         switch (event) {
             .Quit => platform.quit(),
@@ -104,7 +105,7 @@ pub const MainMenu = struct {
         }
     }
 
-    pub fn update(screenPtr: *Screen, time: f64, delta: f64) ?screen.Transition {
+    pub fn update(screenPtr: *Screen, context: *Context, time: f64, delta: f64) ?screen.Transition {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
         if (self.play_pressed) {
@@ -115,17 +116,17 @@ pub const MainMenu = struct {
         return null;
     }
 
-    pub fn render(screenPtr: *Screen, renderer: *Renderer, alpha: f64) void {
+    pub fn render(screenPtr: *Screen, context: *Context, alpha: f64) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
         if (self.dependencies.is_changed(self.desc)) {
-            self.update_gui();
+            self.update_gui(context);
             self.dependencies.update(self.desc);
         }
         self.component_renderer.render();
     }
 
-    fn update_gui(self: *@This()) void {
+    fn update_gui(self: *@This(), context: *Context) void {
         const text = platform.components.text;
         const box = platform.components.box;
         const button = platform.components.button;
@@ -161,7 +162,7 @@ pub const MainMenu = struct {
         self.component_renderer.update(&components) catch unreachable;
     }
 
-    pub fn stop(screenPtr: *Screen) void {
+    pub fn stop(screenPtr: *Screen, context: *Context) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
         self.component_renderer.stop();
     }

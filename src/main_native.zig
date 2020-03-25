@@ -8,7 +8,9 @@ pub fn main() !void {
     platform.init(constants.VIEWPORT_WIDTH, constants.VIEWPORT_HEIGHT);
     defer platform.deinit();
 
-    app.onInit();
+    var context = platform.Context{ .renderer = platform.Renderer.init() };
+
+    app.onInit(&context);
 
     // Timestep based on the Gaffer on Games post, "Fix Your Timestep"
     //    https://www.gafferongames.com/post/fix_your_timestep/
@@ -20,7 +22,7 @@ pub fn main() !void {
 
     while (platform.shouldQuit != platform.QUIT) {
         while (platform.pollEvent()) |event| {
-            app.onEvent(event);
+            app.onEvent(&context, event);
         }
 
         var delta = @intToFloat(f64, timer.lap()) / std.time.ns_per_s; // Delta in seconds
@@ -31,7 +33,7 @@ pub fn main() !void {
         accumulator += delta;
 
         while (accumulator >= TICK_DELTA) {
-            app.update(tickTime, TICK_DELTA);
+            app.update(&context, tickTime, TICK_DELTA);
             accumulator -= TICK_DELTA;
             tickTime += TICK_DELTA;
         }
@@ -41,6 +43,6 @@ pub fn main() !void {
         // then alpha will be equal to 0.5
         const alpha = accumulator / TICK_DELTA;
 
-        app.render(alpha);
+        app.render(&context, alpha);
     }
 }

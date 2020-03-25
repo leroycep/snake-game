@@ -3,7 +3,8 @@ const screen = @import("../screen.zig");
 const Screen = screen.Screen;
 const platform = @import("../platform.zig");
 const Vec2f = platform.Vec2f;
-const Renderer = @import("../renderer.zig").Renderer;
+const Context = platform.Context;
+const Renderer = platform.Renderer;
 const game = @import("../game.zig");
 usingnamespace @import("../constants.zig");
 
@@ -44,7 +45,7 @@ pub const Game = struct {
         return self;
     }
 
-    pub fn onEvent(screenPtr: *Screen, event: platform.Event) void {
+    pub fn onEvent(screenPtr: *Screen, context: *Context, event: platform.Event) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
         switch (event) {
             .Quit => platform.quit(),
@@ -68,7 +69,7 @@ pub const Game = struct {
         }
     }
 
-    pub fn update(screenPtr: *Screen, time: f64, delta: f64) ?screen.Transition {
+    pub fn update(screenPtr: *Screen, context: *Context, time: f64, delta: f64) ?screen.Transition {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
         if (self.quit_pressed) {
@@ -109,24 +110,24 @@ pub const Game = struct {
         return null;
     }
 
-    pub fn render(screenPtr: *const Screen, renderer: *Renderer, alpha: f64) void {
+    pub fn render(screenPtr: *Screen, context: *Context, alpha: f64) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
-        renderer.begin();
+        context.renderer.begin();
 
-        renderer.pushRect(.{ .x = LEVEL_OFFSET_X, .y = LEVEL_OFFSET_Y }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
+        context.renderer.pushRect(.{ .x = LEVEL_OFFSET_X, .y = LEVEL_OFFSET_Y }, .{ .x = LEVEL_WIDTH, .y = LEVEL_HEIGHT }, LEVEL_COLOR, 0);
 
-        self.snake.render(renderer, alpha);
+        self.snake.render(&context.renderer, alpha);
 
         if (self.food_pos) |pos| {
-            renderer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
+            context.renderer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
         }
 
-        renderer.flush();
+        context.renderer.flush();
         platform.renderPresent();
     }
 
-    pub fn deinit(screenPtr: *Screen) void {
+    pub fn deinit(screenPtr: *Screen, context: *Context) void {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
         self.snake.deinit();

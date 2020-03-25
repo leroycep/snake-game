@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 pub usingnamespace @import("platform/common.zig");
+pub const Renderer = @import("platform/renderer.zig").Renderer;
 pub const components = @import("platform/components.zig");
 
 pub const is_web = builtin.arch == builtin.Arch.wasm32;
@@ -35,3 +36,7 @@ fn warnWeb(comptime fmt: []const u8, args: var) void {
     };
     web.consoleLogS(text.ptr, text.len);
 }
+
+pub const Context = struct {
+    renderer: Renderer,
+};

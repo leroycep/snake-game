@@ -1,6 +1,5 @@
-const platform = @import("platform.zig");
+const platform = @import("../platform.zig");
 const Vec2f = platform.Vec2f;
-usingnamespace @import("constants.zig");
 
 const vShaderSrc =
     \\ #version 300 es
@@ -148,10 +147,10 @@ pub const Renderer = struct {
             0, 0, 0, 1,
         };
         const scalingMatrix = [_]f32{
-            2 / @intToFloat(f32, VIEWPORT_WIDTH), 0,                                      0, -1,
-            0,                                    -2 / @intToFloat(f32, VIEWPORT_HEIGHT), 0, 1,
-            0,                                    0,                                      1, 0,
-            0,                                    0,                                      0, 1,
+            2 / @intToFloat(f32, screen_size.x), 0,                                    0, -1,
+            0,                                   -2 / @intToFloat(f32, screen_size.y), 0, 1,
+            0,                                   0,                                    1, 0,
+            0,                                   0,                                    0, 1,
         };
         const projectionMatrix = scalingMatrix; //mulMat4(&scalingMatrix, &translationMatrix);
         platform.glUseProgram(self.shader_program);

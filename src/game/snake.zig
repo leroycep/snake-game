@@ -6,7 +6,7 @@ const Vec2f = platform.Vec2f;
 const pi = std.math.pi;
 const OBB = @import("../collision.zig").OBB;
 const RingBuffer = @import("../ring_buffer.zig").RingBuffer;
-const Renderer = @import("../renderer.zig").Renderer;
+const Renderer = platform.Renderer;
 
 pub const Snake = struct {
     alloc: *std.mem.Allocator,
