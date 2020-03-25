@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 pub usingnamespace @import("platform/common.zig");
+pub const Renderer = @import("platform/renderer.zig").Renderer;
+pub const components = @import("platform/components.zig");
 
 pub const is_web = builtin.arch == builtin.Arch.wasm32;
 const web = @import("platform/web.zig");
@@ -34,3 +36,17 @@ fn warnWeb(comptime fmt: []const u8, args: var) void {
     };
     web.consoleLogS(text.ptr, text.len);
 }
+
+pub const Context = struct {
+    alloc: *std.mem.Allocator,
+    renderer: Renderer,
+    component_renderer: ComponentRenderer,
+
+    pub fn updateComponent(self: *@This(), component: *const components.Component) !void {
+        return self.component_renderer.update(component);
+    }
+
+    pub fn clearComponent(self: *@This()) void {
+        self.component_renderer.clear();
+    }
+};

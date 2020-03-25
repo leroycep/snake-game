@@ -87,6 +87,8 @@ pub const EventTag = enum {
     MouseButtonDown,
     MouseButtonUp,
     MouseWheel,
+
+    Custom,
 };
 
 pub const Event = union(enum) {
@@ -103,6 +105,8 @@ pub const Event = union(enum) {
     MouseButtonDown: MouseButtonEvent,
     MouseButtonUp: MouseButtonEvent,
     MouseWheel: Vec2,
+
+    Custom: u32,
 };
 
 pub const KeyEvent = struct {

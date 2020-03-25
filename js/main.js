@@ -1,10 +1,19 @@
 import getWebGLEnv from "./webgl.js";
+import getComponentsEnv from "./component.js";
 
 let canvas = document.getElementById("canvas-webgl");
+let componentsRoot = document.getElementById("components-root");
 var memory;
+
+var globalInstance;
+
+let customEventCallback = eventId => {
+    globalInstance.exports.onCustomEvent(eventId);
+};
 
 let env = {
   ...getWebGLEnv(canvas, () => memory),
+  ...getComponentsEnv(componentsRoot, () => memory, customEventCallback),
   consoleLogS: (ptr, len) => {
     const bytes = new Uint8Array(memory.buffer, ptr, len);
     let s = "";
@@ -13,7 +22,7 @@ let env = {
     }
     console.log(s);
   },
-  now_f64: ptr => Date.now(),
+  now_f64: ptr => Date.now()
 };
 
 fetch("snake-game.wasm")
@@ -22,6 +31,7 @@ fetch("snake-game.wasm")
   .then(results => results.instance)
   .then(instance => {
     memory = instance.exports.memory;
+    globalInstance = instance;
     instance.exports.onInit();
 
     const SHOULD_QUIT = instance.exports.QUIT;

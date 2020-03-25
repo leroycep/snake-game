@@ -1,14 +1,10 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
-const glad = @cImport({
-    @cInclude("glad/glad.h");
-});
 const panic = std.debug.panic;
+const c = @import("sdl/c.zig");
 usingnamespace @import("common.zig");
-pub usingnamespace glad;
+pub usingnamespace c;
+pub const ComponentRenderer = @import("sdl/component_renderer.zig").ComponentRenderer;
 
 var window: ?*c.SDL_Window = null;
 var context: ?c.SDL_GLContext = null;
@@ -49,7 +45,7 @@ pub fn init(screenWidth: i32, screenHeight: i32) void {
     context = c.SDL_GL_CreateContext(window);
     sdlAssertZero(c.SDL_GL_SetSwapInterval(1));
 
-    if (glad.gladLoadGL() != 1) {
+    if (c.gladLoadGL() != 1) {
         panic("Failed to initialize GLAD\n", .{});
     }
 
