@@ -261,7 +261,34 @@ pub const Container = struct {
                         });
                         yFracUsed += yFrac;
                     }
-                } else if (template.row) |row| {} else {
+                } else if (template.row) |row| {
+                    const denom = denom_calc: {
+                        var denom: u32 = 0;
+                        for (row) |fraction| {
+                            denom += fraction;
+                        }
+                        break :denom_calc denom;
+                    };
+                    const width_per_component = @divTrunc(space.w, @intCast(i32, denom));
+                    const num_rows = @divFloor(self.children.len, row.len) + if (self.children.len % row.len > 0) @as(u32, 1) else @as(u32, 0);
+                    const height_per_component = @divTrunc(space.h, @intCast(i32, num_rows));
+                    var xFracUsed: u32 = 0; // Amount of y fractions used
+                    for (self.children.span()) |*child, idx| {
+                        const x = idx % row.len;
+                        if (x == 0) {
+                            xFracUsed = 0;
+                        }
+                        const y = @divFloor(idx, row.len);
+                        const xFrac = row[x];
+                        try child.render(renderer, Rect{
+                            .x = space.x + @intCast(i32, xFracUsed) * width_per_component,
+                            .y = space.y + @intCast(i32, y) * height_per_component,
+                            .w = width_per_component * @intCast(i32, xFrac),
+                            .h = height_per_component,
+                        });
+                        xFracUsed += xFrac;
+                    }
+                } else {
                     std.debug.assert(false); // Invalid grid layout; at least one of column, row, or areas must be defined
                 }
             },
