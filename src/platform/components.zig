@@ -38,16 +38,16 @@ pub const GridTemplate = struct {
     /// An array of the fractional units that the each component will take up.
     /// If there are more child components defined than there are fractional units
     /// given, a new row will be generated with the same fractional units.
-    rows: ?[]u32 = null,
-    columns: ?[]u32 = null,
+    column: ?[]u32 = null,
+    row: ?[]u32 = null,
 
     pub fn is_valid(self: *const @This(), children: []Component) bool {
         var at_least_one_not_null = false;
-        var num_rows: ?usize = null;
+        var num_column: ?usize = null;
         var num_cols: ?usize = null;
         if (self.areas) |areas| {
             at_least_one_not_null = true;
-            num_rows = areas.len;
+            num_column = areas.len;
             num_cols = areas[0].len;
             for (areas) |row| {
                 if (row.len != num_cols.?) {
@@ -60,16 +60,16 @@ pub const GridTemplate = struct {
                 }
             }
         }
-        if (self.rows) |rows| {
+        if (self.column) |column| {
             at_least_one_not_null = true;
-            if (num_rows) |nrows| {
-                if (rows.len != nrows) return false; // Number of rows in grid area and rows don't match
+            if (num_column) |ncolumn| {
+                if (column.len != ncolumn) return false; // Number of column in grid area and column don't match
             }
         }
-        if (self.columns) |cols| {
+        if (self.row) |cols| {
             at_least_one_not_null = true;
             if (num_cols) |ncols| {
-                if (cols.len != ncols) return false; // Number of columns in grid area and rows don't match
+                if (cols.len != ncols) return false; // Number of row in grid area and column don't match
             }
         }
         return at_least_one_not_null;
