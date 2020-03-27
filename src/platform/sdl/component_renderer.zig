@@ -233,17 +233,36 @@ pub const Container = struct {
                             .h = @intCast(i32, spot.rect.h + 1) * height_per_component,
                         });
                     }
-                } else {
-                    // TODO: actually do grid layout
-                    const space_per_component = @divTrunc(space.w, @intCast(i32, self.children.span().len));
+                } else if (template.rows) |rows| {
+                    // Render
+                    const denom = denom_calc: {
+                        var denom: u32 = 0;
+                        for (rows) |row_fraction| {
+                            denom += row_fraction;
+                        }
+                        break :denom_calc denom;
+                    };
+                    const height_per_component = @divTrunc(space.h, @intCast(i32, denom));
+                    const num_cols = @divFloor(self.children.len, rows.len) + 1;
+                    const width_per_component = @divTrunc(space.w, @intCast(i32, num_cols));
+                    var yFracUsed: u32 = 0; // Amount of y fractions used
                     for (self.children.span()) |*child, idx| {
+                        const y = idx % rows.len;
+                        if (y == 0) {
+                            yFracUsed = 0;
+                        }
+                        const x = @divFloor(idx, rows.len);
+                        const yFrac = rows[y];
                         try child.render(renderer, Rect{
-                            .x = space.x + space_per_component * @intCast(i32, idx),
-                            .y = space.y,
-                            .w = space_per_component,
-                            .h = space.h,
+                            .x = space.x + @intCast(i32, x) * width_per_component,
+                            .y = space.y + @intCast(i32, yFracUsed) * height_per_component,
+                            .w = width_per_component,
+                            .h = height_per_component * @intCast(i32, yFrac),
                         });
+                        yFracUsed += yFrac;
                     }
+                } else if (template.columns) |columns| {} else {
+                    std.debug.assert(false); // Invalid grid layout; at least one of rows, columns, or areas must be defined
                 }
             },
         }
