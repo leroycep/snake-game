@@ -5,7 +5,6 @@ usingnamespace @import("constants.zig");
 const Vec2f = platform.Vec2f;
 const pi = std.math.pi;
 const ring_buffer = @import("ring_buffer.zig");
-const RingBuffer = ring_buffer.RingBuffer;
 const collision = @import("collision.zig");
 const OBB = collision.OBB;
 const screen = @import("screen.zig");
@@ -57,5 +56,5 @@ pub fn render(context: *platform.Context, alpha: f64) void {
 }
 
 test "" {
-    std.meta.refAllDecls(ring_buffer);
+    std.meta.refAllDecls(@import("array_deque.zig"));
 }

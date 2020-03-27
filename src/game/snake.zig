@@ -5,7 +5,7 @@ const platform = @import("../platform.zig");
 const Vec2f = platform.Vec2f;
 const pi = std.math.pi;
 const OBB = @import("../collision.zig").OBB;
-const RingBuffer = @import("../ring_buffer.zig").RingBuffer;
+const ArrayDeque = @import("../array_deque.zig").ArrayDeque;
 const Renderer = platform.Renderer;
 
 pub const Snake = struct {
@@ -16,10 +16,9 @@ pub const Snake = struct {
     segments: std.ArrayList(Segment),
     tail_segment: Segment,
 
-    position_history: RingBuffer(PastPosition),
+    position_history: ArrayDeque(PastPosition),
 
     pub fn init(alloc: *std.mem.Allocator) !@This() {
-        const position_history_buffer = try alloc.alloc(PastPosition, HISTORY_BUFFER_SIZE);
         return Snake{
             .alloc = alloc,
             .head_segment = Segment{
@@ -33,7 +32,7 @@ pub const Snake = struct {
                 .size = Vec2f{ .x = SNAKE_TAIL_LENGTH, .y = SNAKE_TAIL_WIDTH },
                 .dir = 0,
             },
-            .position_history = RingBuffer(PastPosition).init(position_history_buffer),
+            .position_history = ArrayDeque(PastPosition).init(alloc),
         };
     }
 
@@ -149,9 +148,7 @@ pub const Snake = struct {
         }) catch unreachable;
     }
 
-    pub fn deinit(self: *@This()) void {
-        self.alloc.free(self.position_history.buffer);
-    }
+    pub fn deinit(self: *@This()) void {}
 };
 
 pub const Segment = struct {
