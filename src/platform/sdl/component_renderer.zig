@@ -46,7 +46,7 @@ pub const ComponentRenderer = struct {
         };
     }
 
-    pub fn update(self: *@This(), new_component: *const Component) !void {
+    pub fn update(self: *@This(), new_component: *const Component) RenderingError!void {
         self.current_component = try componentToRendered(self.alloc, new_component);
     }
 
@@ -59,7 +59,7 @@ pub const ComponentRenderer = struct {
                 .w = screen_size.x,
                 .h = screen_size.y,
             };
-            component.render(renderer, space);
+            component.render(renderer, space) catch unreachable;
         }
     }
 
@@ -96,11 +96,11 @@ const RenderedComponent = struct {
         self.component.deinit(self);
     }
 
-    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
+    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) RenderingError!void {
         switch (self.component) {
             .Text => |*self_text| self_text.render(renderer, space),
             .Button => |*self_button| self_button.render(renderer, space),
-            .Container => |*self_container| self_container.render(renderer, space),
+            .Container => |*self_container| try self_container.render(self, renderer, space),
         }
     }
 };
@@ -156,7 +156,7 @@ pub const Container = struct {
         self.children.deinit();
     }
 
-    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
+    pub fn render(self: *@This(), component: *RenderedComponent, renderer: *Renderer, space: Rect) RenderingError!void {
         switch (self.layout) {
             .Flex => |orientation| {
                 const axisSize = switch (orientation) {
@@ -179,19 +179,71 @@ pub const Container = struct {
                             .h = space_per_component,
                         },
                     };
-                    child.render(renderer, childSpace);
+                    try child.render(renderer, childSpace);
                 }
             },
             .Grid => |template| {
-                // TODO: actually do grid layout
-                const space_per_component = @divTrunc(space.w, @intCast(i32, self.children.span().len));
-                for (self.children.span()) |*child, idx| {
-                    child.render(renderer, Rect{
-                        .x = space.x + space_per_component * @intCast(i32, idx),
-                        .y = space.y,
-                        .w = space_per_component,
-                        .h = space.h,
-                    });
+                if (template.areas) |areas| {
+                    const Cell = struct {
+                        area_id: usize,
+                        // space cell takes up in the areas array
+                        rect: Rect,
+                    };
+                    var spots = std.ArrayList(Cell).init(component.alloc);
+                    defer spots.deinit();
+                    var x: usize = 0;
+                    var y: usize = 0;
+                    while (y < areas.len) {
+                        defer {
+                            x += 1;
+                            if (x >= areas[y].len) {
+                                y += 1;
+                                x = 0;
+                            }
+                        }
+                        var cell = try spots.addOne();
+                        cell.area_id = areas[y][x];
+                        cell.rect.x = @intCast(i32, x);
+                        while (x + 1 < areas[y].len and areas[y][x + 1] == cell.area_id) {
+                            x += 1;
+                        }
+                        cell.rect.w = @intCast(i32, x) - cell.rect.x;
+
+                        cell.rect.y = @intCast(i32, y);
+                        var j = y;
+                        expand_down: while (j + 1 < areas.len) {
+                            var i = @intCast(usize, cell.rect.x);
+                            while (i <= cell.rect.x + cell.rect.w) : (i += 1) {
+                                if (areas[j + 1][i] != cell.area_id) {
+                                    break :expand_down;
+                                }
+                            }
+                            j += 1;
+                        }
+                        cell.rect.h = @intCast(i32, j) - cell.rect.y;
+                    }
+
+                    const height_per_component = @divTrunc(space.h, @intCast(i32, areas.len));
+                    const width_per_component = @divTrunc(space.w, @intCast(i32, areas[0].len));
+                    for (spots.span()) |spot| {
+                        try self.children.span()[spot.area_id].render(renderer, Rect{
+                            .x = space.x + @intCast(i32, spot.rect.x) * width_per_component,
+                            .y = space.y + @intCast(i32, spot.rect.y) * height_per_component,
+                            .w = @intCast(i32, spot.rect.w + 1) * width_per_component,
+                            .h = @intCast(i32, spot.rect.h + 1) * height_per_component,
+                        });
+                    }
+                } else {
+                    // TODO: actually do grid layout
+                    const space_per_component = @divTrunc(space.w, @intCast(i32, self.children.span().len));
+                    for (self.children.span()) |*child, idx| {
+                        try child.render(renderer, Rect{
+                            .x = space.x + space_per_component * @intCast(i32, idx),
+                            .y = space.y,
+                            .w = space_per_component,
+                            .h = space.h,
+                        });
+                    }
                 }
             },
         }
