@@ -144,9 +144,11 @@ const Button = struct {
 
     rect: Rect2f = Rect2f{ .x = 0, .y = 0, .w = 0, .h = 0 },
     leftMouseBtnDown: bool = false,
+    hover: bool = false,
 
     pub fn onEvent(self: *@This(), event: platform.Event) ?platform.Event {
         switch (event) {
+            .MouseMotion => |pos| self.hover = self.rect.contains(Vec2f.fromVeci(&pos)),
             .MouseButtonDown => |ev| if (self.rect.contains(Vec2f.fromVeci(&ev.pos))) {
                 if (ev.button == .Left) {
                     self.leftMouseBtnDown = true;
@@ -177,7 +179,8 @@ const Button = struct {
             .y = @intToFloat(f32, space.y),
         }).add(&size);
         self.rect = .{ .x = center.x, .y = center.y, .w = size.x, .h = size.y };
-        renderer.pushRect(center, size, .{ .r = 255, .g = 255, .b = 255 }, 0);
+        const color = if (self.leftMouseBtnDown and self.hover) platform.Color{ .r = 255, .g = 255, .b = 255 } else platform.Color{ .r = 230, .g = 230, .b = 230 };
+        renderer.pushRect(center, size, color, 0);
     }
 };
 
