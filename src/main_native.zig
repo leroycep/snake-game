@@ -27,7 +27,11 @@ pub fn main() !void {
 
     while (platform.shouldQuit != platform.QUIT) {
         while (platform.pollEvent()) |event| {
+            const custom_event_opt = context.component_renderer.onEvent(event);
             app.onEvent(&context, event);
+            if (custom_event_opt) |custom_event| {
+                app.onEvent(&context, custom_event);
+            }
         }
 
         var delta = @intToFloat(f64, timer.lap()) / std.time.ns_per_s; // Delta in seconds

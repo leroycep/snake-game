@@ -2,11 +2,13 @@ const builtin = @import("builtin");
 const std = @import("std");
 usingnamespace @import("c.zig");
 
-pub const Renderer = @import("../renderer.zig").Renderer;
+const platform = @import("../../platform.zig");
+const Renderer = @import("../renderer.zig").Renderer;
 const common = @import("../common.zig");
 const Rect = common.Rect;
+const Rect2f = common.Rect2f;
 const Vec2f = common.Vec2f;
-pub const sdl = @import("../sdl.zig");
+const sdl = @import("../sdl.zig");
 const components = @import("../components.zig");
 const Component = components.Component;
 const ComponentTag = components.ComponentTag;
@@ -44,6 +46,13 @@ pub const ComponentRenderer = struct {
         return @This(){
             .alloc = alloc,
         };
+    }
+
+    pub fn onEvent(self: *@This(), event: platform.Event) ?platform.Event {
+        if (self.current_component) |*component| {
+            return component.onEvent(event);
+        }
+        return null;
     }
 
     pub fn update(self: *@This(), new_component: *const Component) RenderingError!void {
@@ -96,6 +105,14 @@ const RenderedComponent = struct {
         self.component.deinit(self);
     }
 
+    pub fn onEvent(self: *@This(), event: platform.Event) ?platform.Event {
+        return switch (self.component) {
+            .Text => null,
+            .Button => |*self_button| self_button.onEvent(event),
+            .Container => |*self_container| self_container.onEvent(event),
+        };
+    }
+
     pub fn render(self: *@This(), renderer: *Renderer, space: Rect) RenderingError!void {
         switch (self.component) {
             .Text => |*self_text| self_text.render(renderer, space),
@@ -125,6 +142,31 @@ const Button = struct {
     text: []const u8,
     events: Events,
 
+    rect: Rect2f = Rect2f{ .x = 0, .y = 0, .w = 0, .h = 0 },
+    leftMouseBtnDown: bool = false,
+
+    pub fn onEvent(self: *@This(), event: platform.Event) ?platform.Event {
+        switch (event) {
+            .MouseButtonDown => |ev| if (self.rect.contains(Vec2f.fromVeci(&ev.pos))) {
+                if (ev.button == .Left) {
+                    self.leftMouseBtnDown = true;
+                }
+            },
+            .MouseButtonUp => |ev| if (self.leftMouseBtnDown) {
+                if (ev.button == .Left) {
+                    self.leftMouseBtnDown = false;
+                    if (self.rect.contains(Vec2f.fromVeci(&ev.pos))) {
+                        if (self.events.click) |click| {
+                            return platform.Event{ .Custom = click };
+                        }
+                    }
+                }
+            },
+            else => {},
+        }
+        return null;
+    }
+
     pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
         const size = Vec2f{
             .x = @intToFloat(f32, space.w) / 2,
@@ -134,6 +176,7 @@ const Button = struct {
             .x = @intToFloat(f32, space.x),
             .y = @intToFloat(f32, space.y),
         }).add(&size);
+        self.rect = .{ .x = center.x, .y = center.y, .w = size.x, .h = size.y };
         renderer.pushRect(center, size, .{ .r = 255, .g = 255, .b = 255 }, 0);
     }
 };
@@ -154,6 +197,15 @@ pub const Container = struct {
             child.deinit();
         }
         self.children.deinit();
+    }
+
+    pub fn onEvent(self: *@This(), event: platform.Event) ?platform.Event {
+        for (self.children.span()) |*child| {
+            if (child.onEvent(event)) |ev| {
+                return ev;
+            }
+        }
+        return null;
     }
 
     pub fn render(self: *@This(), component: *RenderedComponent, renderer: *Renderer, space: Rect) RenderingError!void {

@@ -72,6 +72,16 @@ pub const Vec2f = struct {
     }
 };
 pub const Rect = struct { x: i32, y: i32, w: i32, h: i32 };
+pub const Rect2f = struct {
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+
+    pub fn contains(self: Rect2f, point: Vec2f) bool {
+        return point.x > self.x - self.w / 2 and point.x < self.x + self.w / 2 and point.y > self.y - self.h / 2 and point.y < self.y + self.h / 2;
+    }
+};
 
 pub const EventTag = enum {
     Quit,
