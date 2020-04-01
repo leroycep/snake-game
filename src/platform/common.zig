@@ -81,6 +81,22 @@ pub const Rect2f = struct {
     pub fn contains(self: Rect2f, point: Vec2f) bool {
         return point.x > self.x - self.w / 2 and point.x < self.x + self.w / 2 and point.y > self.y - self.h / 2 and point.y < self.y + self.h / 2;
     }
+
+    pub fn top_left(self: Rect2f) Vec2f {
+        return Vec2f{ .x = -self.w / 2 + self.x, .y = -self.h / 2 + self.y };
+    }
+
+    pub fn top_right(self: Rect2f) Vec2f {
+        return Vec2f{ .x = self.w / 2 + self.x, .y = -self.h / 2 + self.y };
+    }
+
+    pub fn bottom_left(self: Rect2f) Vec2f {
+        return Vec2f{ .x = -self.w / 2 + self.x, .y = self.h / 2 + self.y };
+    }
+
+    pub fn bottom_right(self: Rect2f) Vec2f {
+        return Vec2f{ .x = self.w / 2 + self.x, .y = self.h / 2 + self.y };
+    }
 };
 
 pub const EventTag = enum {

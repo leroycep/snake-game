@@ -42,9 +42,9 @@ const KENNNEY_FUTURE_FONT = @embedFile("../../../assets/kenney_future.ttf");
 
 const Character = struct {
     texture: GLuint,
-    size: platform.Vec2,
-    bearing: platform.Vec2,
-    advance: i32,
+    size: platform.Vec2f,
+    bearing: platform.Vec2f,
+    advance: i64,
 };
 
 const Context = struct {
@@ -76,6 +76,11 @@ pub const ComponentRenderer = struct {
             return error.FaceInitFailed;
         }
 
+        ret = FT_Set_Pixel_Sizes(face.*, 0, 48);
+        if (ret != 0) {
+            return error.SetFaceSizeFailed;
+        }
+
         // Add all 128 ascii glyphs to map
         var characters = std.AutoHashMap(u32, Character).init(alloc);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -105,9 +110,9 @@ pub const ComponentRenderer = struct {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             _ = try characters.put(char, .{
                 .texture = texture,
-                .size = .{ .x = @intCast(i32, face.*.*.glyph.*.bitmap.width), .y = @intCast(i32, face.*.*.glyph.*.bitmap.rows) },
-                .bearing = .{ .x = face.*.*.glyph.*.bitmap_left, .y = face.*.*.glyph.*.bitmap_top },
-                .advance = @intCast(i32, face.*.*.glyph.*.advance.x),
+                .size = .{ .x = @intToFloat(f32, face.*.*.glyph.*.bitmap.width), .y = @intToFloat(f32, face.*.*.glyph.*.bitmap.rows) },
+                .bearing = .{ .x = @intToFloat(f32, face.*.*.glyph.*.bitmap_left), .y = @intToFloat(f32, face.*.*.glyph.*.bitmap_top) },
+                .advance = face.*.*.glyph.*.advance.x,
             });
         }
 
@@ -212,6 +217,7 @@ const Text = struct {
             .y = @intToFloat(f32, space.y),
         }).add(&size.scalMul(0.5));
         ctx.renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
+        renderText(ctx, self.text, center, .{ .r = 255, .g = 255, .b = 255 });
     }
 };
 
@@ -468,5 +474,32 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
                 },
             };
         },
+    }
+}
+
+pub fn renderText(ctx: Context, text: []const u8, pos: Vec2f, color: platform.Color) void {
+    var x = pos.x;
+    var y = pos.y;
+    for (text) |c| {
+        const kv = ctx.characters.get(c) orelse unreachable;
+        const ch = kv.value;
+
+        const dst = Rect2f{
+            .x = x + ch.bearing.x,
+            .y = y - ch.bearing.y,
+            .w = ch.size.x,
+            .h = ch.size.y,
+        };
+
+        const textureSrc = Rect2f{
+            .x = 0.5,
+            .y = 0.5,
+            .w = 1.0,
+            .h = 1.0,
+        };
+
+        ctx.renderer.pushFontRect(dst, textureSrc, ch.texture, color);
+
+        x += @intToFloat(f32, ch.advance >> 6);
     }
 }
