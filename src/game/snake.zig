@@ -148,7 +148,10 @@ pub const Snake = struct {
         }) catch unreachable;
     }
 
-    pub fn deinit(self: *@This()) void {}
+    pub fn deinit(self: *@This()) void {
+        self.position_history.deinit();
+        self.segments.deinit();
+    }
 };
 
 pub const Segment = struct {
