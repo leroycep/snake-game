@@ -214,16 +214,17 @@ const Text = struct {
             .x = @intToFloat(f32, space.w),
             .y = @intToFloat(f32, space.h),
         };
-        const pos = (Vec2f{
+        const center = (Vec2f{
             .x = @intToFloat(f32, space.x),
             .y = @intToFloat(f32, space.y),
-        });
-        const center = pos.add(&size.scalMul(0.5));
+        }).add(&size.scalMul(0.5));
+
         ctx.renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
+
         const glyphs = renderText(ctx, self.text, .{ .wrapWidth = size.x }) catch unreachable;
         defer glyphs.deinit();
         for (glyphs.span()) |g| {
-            ctx.renderer.pushFontRect(g.dst.translate(pos), g.uv, g.texture, g.color);
+            ctx.renderer.pushFontRect(g.dst.translate(center), g.uv, g.texture, g.color);
         }
     }
 };
@@ -279,6 +280,13 @@ const Button = struct {
         self.rect = .{ .x = center.x, .y = center.y, .w = size.x, .h = size.y };
         const color = if (self.leftMouseBtnDown and self.hover) platform.Color{ .r = 255, .g = 255, .b = 255 } else platform.Color{ .r = 230, .g = 230, .b = 230 };
         ctx.renderer.pushRect(center, size, color, 0);
+
+        // Render label
+        const glyphs = renderText(ctx, self.text, .{}) catch unreachable;
+        defer glyphs.deinit();
+        for (glyphs.span()) |g| {
+            ctx.renderer.pushFontRect(g.dst.translate(center), g.uv, g.texture, g.color);
+        }
     }
 };
 
@@ -513,7 +521,14 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
     var words = std.ArrayList(Word).init(ctx.alloc);
     defer words.deinit();
 
+    const space_width = get_space_width: {
+        const kv = ctx.characters.get(' ').?;
+        const ch = kv.value;
+        break :get_space_width @intToFloat(f32, ch.advance >> 6);
+    };
+
     var word_width: f32 = 0;
+    var total_width: f32 = 0;
     var startOpt: ?usize = null;
     for (text) |c, idx| {
         if (startOpt) |start| {
@@ -526,6 +541,7 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
                 else => {
                     const ch = ctx.characters.get(c).?.value;
                     word_width += @intToFloat(f32, ch.advance >> 6);
+                    total_width += @intToFloat(f32, ch.advance >> 6);
                 },
             }
         } else {
@@ -544,15 +560,15 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
     var glyphs = std.ArrayList(Glyph).init(ctx.alloc);
     errdefer glyphs.deinit();
 
+    var offsetx = if (opts.wrapWidth) |width| -width / 2 else -total_width / 2;
+
     var isFirst = true;
     var x: f32 = 0;
     var y: f32 = opts.lineHeight;
     for (words.span()) |word| {
         // Add a space between each word
         if (!isFirst) {
-            const kv = ctx.characters.get(' ').?;
-            const ch = kv.value;
-            x += @intToFloat(f32, ch.advance >> 6);
+            x += space_width;
         }
         defer isFirst = false;
 
@@ -577,7 +593,7 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
             const extents = ch.size.scalMul(0.5);
 
             const dst = Rect2f{
-                .x = x + ch.bearing.x + extents.x,
+                .x = offsetx + x + ch.bearing.x + extents.x,
                 .y = y - ch.bearing.y + extents.y,
                 .w = ch.size.x,
                 .h = ch.size.y,
