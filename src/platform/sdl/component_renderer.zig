@@ -48,6 +48,7 @@ const Character = struct {
 };
 
 const Context = struct {
+    alloc: *std.mem.Allocator,
     renderer: *platform.Renderer,
     characters: *std.AutoHashMap(u32, Character),
 };
@@ -148,7 +149,7 @@ pub const ComponentRenderer = struct {
                 .w = screen_size.x,
                 .h = screen_size.y,
             };
-            component.render(.{ .renderer = renderer, .characters = &self.characters }, space) catch unreachable;
+            component.render(.{ .alloc = self.alloc, .renderer = renderer, .characters = &self.characters }, space) catch unreachable;
         }
     }
 
@@ -219,7 +220,11 @@ const Text = struct {
         });
         const center = pos.add(&size.scalMul(0.5));
         ctx.renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
-        renderText(ctx, self.text, pos, .{ .wrapWidth = size.x });
+        const glyphs = renderText(ctx, self.text, .{ .wrapWidth = size.x }) catch unreachable;
+        defer glyphs.deinit();
+        for (glyphs.span()) |g| {
+            ctx.renderer.pushFontRect(g.dst.translate(pos), g.uv, g.texture, g.color);
+        }
     }
 };
 
@@ -493,45 +498,105 @@ const RenderTextOptions = struct {
     lineHeight: f32 = 20,
 };
 
-pub fn renderText(ctx: Context, text: []const u8, pos: Vec2f, opts: RenderTextOptions) void {
+const Glyph = struct {
+    dst: Rect2f,
+    uv: Rect2f,
+    texture: GLuint,
+    color: platform.Color,
+};
+
+pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.ArrayList(Glyph) {
+    const Word = struct {
+        text: []const u8,
+        width: f32,
+    };
+    var words = std.ArrayList(Word).init(ctx.alloc);
+    defer words.deinit();
+
+    var word_width: f32 = 0;
+    var startOpt: ?usize = null;
+    for (text) |c, idx| {
+        if (startOpt) |start| {
+            switch (c) {
+                ' ', '\n', '\t' => {
+                    try words.append(.{ .text = text[start..idx], .width = word_width });
+                    startOpt = null;
+                    word_width = 0;
+                },
+                else => {
+                    const ch = ctx.characters.get(c).?.value;
+                    word_width += @intToFloat(f32, ch.advance >> 6);
+                },
+            }
+        } else {
+            switch (c) {
+                ' ', '\n', '\t' => {},
+                else => {
+                    startOpt = idx;
+                },
+            }
+        }
+    }
+    if (startOpt) |start| {
+        try words.append(.{ .text = text[start..], .width = word_width });
+    }
+
+    var glyphs = std.ArrayList(Glyph).init(ctx.alloc);
+    errdefer glyphs.deinit();
+
+    var isFirst = true;
     var x: f32 = 0;
     var y: f32 = opts.lineHeight;
-    for (text) |c| {
-        if (c == '\n') {
-            continue;
+    for (words.span()) |word| {
+        // Add a space between each word
+        if (!isFirst) {
+            const kv = ctx.characters.get(' ').?;
+            const ch = kv.value;
+            x += @intToFloat(f32, ch.advance >> 6);
         }
-
-        const kv = ctx.characters.get(c) orelse {
-            std.debug.warn("Unknown character: {c}\n", .{c});
-            unreachable;
-        };
-        const ch = kv.value;
-        const advance = @intToFloat(f32, ch.advance >> 6);
-        defer x += advance;
+        defer isFirst = false;
 
         if (opts.wrapWidth) |wrapWidth| {
-            if (x + advance > wrapWidth) {
+            // Make a new line if the word would make it too long
+            if (x + word.width > wrapWidth) {
                 x = 0;
                 y += opts.lineHeight;
             }
         }
 
-        const extents = ch.size.scalMul(0.5);
+        // Add each character in the text to the list of glyphs
+        for (word.text) |c| {
+            const kv = ctx.characters.get(c) orelse {
+                std.debug.warn("Unknown character: {c}\n", .{c});
+                unreachable;
+            };
+            const ch = kv.value;
+            const advance = @intToFloat(f32, ch.advance >> 6);
+            defer x += advance;
 
-        const dst = Rect2f{
-            .x = pos.x + x + ch.bearing.x + extents.x,
-            .y = pos.y + y - ch.bearing.y + extents.y,
-            .w = ch.size.x,
-            .h = ch.size.y,
-        };
+            const extents = ch.size.scalMul(0.5);
 
-        const textureSrc = Rect2f{
-            .x = 0.5,
-            .y = 0.5,
-            .w = 1.0,
-            .h = 1.0,
-        };
+            const dst = Rect2f{
+                .x = x + ch.bearing.x + extents.x,
+                .y = y - ch.bearing.y + extents.y,
+                .w = ch.size.x,
+                .h = ch.size.y,
+            };
 
-        ctx.renderer.pushFontRect(dst, textureSrc, ch.texture, opts.color);
+            const textureSrc = Rect2f{
+                .x = 0.5,
+                .y = 0.5,
+                .w = 1.0,
+                .h = 1.0,
+            };
+
+            try glyphs.append(.{
+                .dst = dst,
+                .uv = textureSrc,
+                .texture = ch.texture,
+                .color = opts.color,
+            });
+        }
     }
+    return glyphs;
 }

@@ -78,6 +78,15 @@ pub const Rect2f = struct {
     w: f32,
     h: f32,
 
+    pub fn translate(self: Rect2f, vector: Vec2f) Rect2f {
+        return .{
+            .x = self.x + vector.x,
+            .y = self.y + vector.y,
+            .w = self.w,
+            .h = self.h,
+        };
+    }
+
     pub fn contains(self: Rect2f, point: Vec2f) bool {
         return point.x > self.x - self.w / 2 and point.x < self.x + self.w / 2 and point.y > self.y - self.h / 2 and point.y < self.y + self.h / 2;
     }
