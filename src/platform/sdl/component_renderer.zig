@@ -534,6 +534,9 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
         if (startOpt) |start| {
             switch (c) {
                 ' ', '\n', '\t' => {
+                    if (words.span().len > 0) {
+                        total_width += space_width;
+                    }
                     try words.append(.{ .text = text[start..idx], .width = word_width });
                     startOpt = null;
                     word_width = 0;
@@ -560,7 +563,9 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
     var glyphs = std.ArrayList(Glyph).init(ctx.alloc);
     errdefer glyphs.deinit();
 
-    var offsetx = if (opts.wrapWidth) |width| -width / 2 else -total_width / 2;
+    var width = if (opts.wrapWidth) |wwidth| std.math.min(total_width, wwidth) else total_width;
+    var offsetx = -width / 2;
+    var offsety = if (opts.wrapWidth == null) -opts.lineHeight / 2 else 0;
 
     var isFirst = true;
     var x: f32 = 0;
@@ -594,7 +599,7 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
 
             const dst = Rect2f{
                 .x = offsetx + x + ch.bearing.x + extents.x,
-                .y = y - ch.bearing.y + extents.y,
+                .y = offsety + y - ch.bearing.y + extents.y,
                 .w = ch.size.x,
                 .h = ch.size.y,
             };
@@ -614,5 +619,13 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
             });
         }
     }
+
+    const total_height = y + opts.lineHeight;
+    if (opts.wrapWidth != null) {
+        for (glyphs.span()) |*g| {
+            g.dst.y -= total_height / 2;
+        }
+    }
+
     return glyphs;
 }
