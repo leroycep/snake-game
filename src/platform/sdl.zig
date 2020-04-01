@@ -27,9 +27,7 @@ pub fn now() u64 {
     return std.time.milliTimestamp();
 }
 
-pub fn init(screenWidth: i32, screenHeight: i32) void {
-    const allocator = std.heap.direct_allocator;
-
+pub fn init(allocator: *std.mem.Allocator, screenWidth: i32, screenHeight: i32) void {
     if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_AUDIO) != 0) {
         panic("SDL_Init failed: {c}\n", .{c.SDL_GetError()});
     }

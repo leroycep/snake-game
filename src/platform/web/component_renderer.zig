@@ -289,10 +289,10 @@ pub fn apply_layout(element: u32, layout: *const Layout) void {
             if (template.areas) |areas| {
                 element_setGridTemplateAreas(element, areas);
             }
-            if (template.rows) |rows| {
+            if (template.column) |rows| {
                 element_setGridTemplateRows(element, rows);
             }
-            if (template.columns) |cols| {
+            if (template.row) |cols| {
                 element_setGridTemplateColumns(element, cols);
             }
         },

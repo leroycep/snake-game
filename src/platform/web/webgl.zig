@@ -7,6 +7,7 @@ pub const GL_ELEMENT_ARRAY_BUFFER = 0x8893;
 pub const GL_TRIANGLES = 4;
 pub const GL_TRIANGLE_STRIP = 5;
 pub const GL_STATIC_DRAW = 35044;
+pub const GL_DYNAMIC_DRAW = 0x88E8;
 pub const GL_FLOAT = 5126;
 pub const GL_DEPTH_TEST = 2929;
 pub const GL_LEQUAL = 515;

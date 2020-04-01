@@ -5,10 +5,11 @@ const app = @import("app.zig");
 const Timer = std.time.Timer;
 
 pub fn main() !void {
-    platform.init(constants.VIEWPORT_WIDTH, constants.VIEWPORT_HEIGHT);
+    const alloc = std.heap.c_allocator;
+
+    platform.init(alloc, constants.VIEWPORT_WIDTH, constants.VIEWPORT_HEIGHT);
     defer platform.deinit();
 
-    const alloc = std.heap.direct_allocator;
     var context = platform.Context{
         .alloc = alloc,
         .renderer = platform.Renderer.init(),

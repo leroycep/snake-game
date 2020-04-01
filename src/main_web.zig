@@ -20,7 +20,7 @@ export const TICK_DELTA_SECONDS = constants.TICK_DELTA_SECONDS;
 var context: platform.Context = undefined;
 
 export fn onInit() void {
-    const alloc = std.heap.direct_allocator;
+    const alloc = std.heap.page_allocator;
     context = platform.Context{
         .alloc = alloc,
         .renderer = platform.Renderer.init(),
