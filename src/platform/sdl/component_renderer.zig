@@ -38,13 +38,84 @@ fn rgba(r: u8, g: u8, b: u8, a: u8) u32 {
     }
 }
 
+const KENNNEY_FUTURE_FONT = @embedFile("../../../assets/kenney_future.ttf");
+
+const Character = struct {
+    texture: GLuint,
+    size: platform.Vec2,
+    bearing: platform.Vec2,
+    advance: i32,
+};
+
+const Context = struct {
+    renderer: *platform.Renderer,
+    characters: *std.AutoHashMap(u32, Character),
+};
+
 pub const ComponentRenderer = struct {
     alloc: *std.mem.Allocator,
     current_component: ?RenderedComponent = null,
+    freetype: *FT_Library,
+    face: *FT_Face,
+    characters: std.AutoHashMap(u32, Character),
 
     pub fn init(alloc: *std.mem.Allocator) !@This() {
+        var ft = try alloc.create(FT_Library);
+        errdefer alloc.destroy(ft);
+
+        var ret = FT_Init_FreeType(ft);
+        if (ret != 0) {
+            return error.FreetypeInitFailed;
+        }
+
+        var face = try alloc.create(FT_Face);
+        errdefer alloc.destroy(face);
+
+        ret = FT_New_Memory_Face(ft.*, KENNNEY_FUTURE_FONT, KENNNEY_FUTURE_FONT.len, 0, face);
+        if (ret != 0) {
+            return error.FaceInitFailed;
+        }
+
+        // Add all 128 ascii glyphs to map
+        var characters = std.AutoHashMap(u32, Character).init(alloc);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        var char: u8 = 0;
+        while (char < 128) : (char += 1) {
+            if (FT_Load_Char(face.*, char, FT_LOAD_RENDER) > 1) {
+                std.debug.warn("Failed to load freetype glyph: {c}\n", .{char});
+                continue;
+            }
+            var texture: GLuint = 0;
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RED,
+                @intCast(c_int, face.*.*.glyph.*.bitmap.width),
+                @intCast(c_int, face.*.*.glyph.*.bitmap.rows),
+                0,
+                GL_RED,
+                GL_UNSIGNED_BYTE,
+                face.*.*.glyph.*.bitmap.buffer,
+            );
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            _ = try characters.put(char, .{
+                .texture = texture,
+                .size = .{ .x = @intCast(i32, face.*.*.glyph.*.bitmap.width), .y = @intCast(i32, face.*.*.glyph.*.bitmap.rows) },
+                .bearing = .{ .x = face.*.*.glyph.*.bitmap_left, .y = face.*.*.glyph.*.bitmap_top },
+                .advance = @intCast(i32, face.*.*.glyph.*.advance.x),
+            });
+        }
+
         return @This(){
             .alloc = alloc,
+            .freetype = ft,
+            .face = face,
+            .characters = characters,
         };
     }
 
@@ -56,6 +127,9 @@ pub const ComponentRenderer = struct {
     }
 
     pub fn update(self: *@This(), new_component: *const Component) RenderingError!void {
+        if (self.current_component) |*component| {
+            component.deinit();
+        }
         self.current_component = try componentToRendered(self.alloc, new_component);
     }
 
@@ -68,7 +142,7 @@ pub const ComponentRenderer = struct {
                 .w = screen_size.x,
                 .h = screen_size.y,
             };
-            component.render(renderer, space) catch unreachable;
+            component.render(.{ .renderer = renderer, .characters = &self.characters }, space) catch unreachable;
         }
     }
 
@@ -77,7 +151,10 @@ pub const ComponentRenderer = struct {
     }
 
     pub fn deinit(self: *@This()) void {
-        SDL_FreeSurface(self.SDL_Surface);
+        _ = FT_Done_Face(self.face.*);
+        _ = FT_Done_FreeType(self.freetype.*);
+        self.alloc.destroy(self.face);
+        self.alloc.destroy(self.freetype);
     }
 };
 
@@ -113,7 +190,7 @@ const RenderedComponent = struct {
         };
     }
 
-    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) RenderingError!void {
+    pub fn render(self: *@This(), renderer: Context, space: Rect) RenderingError!void {
         switch (self.component) {
             .Text => |*self_text| self_text.render(renderer, space),
             .Button => |*self_button| self_button.render(renderer, space),
@@ -125,7 +202,7 @@ const RenderedComponent = struct {
 const Text = struct {
     text: []const u8,
 
-    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
+    pub fn render(self: *@This(), ctx: Context, space: Rect) void {
         const size = Vec2f{
             .x = @intToFloat(f32, space.w),
             .y = @intToFloat(f32, space.h),
@@ -134,7 +211,7 @@ const Text = struct {
             .x = @intToFloat(f32, space.x),
             .y = @intToFloat(f32, space.y),
         }).add(&size.scalMul(0.5));
-        renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
+        ctx.renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
     }
 };
 
@@ -169,7 +246,7 @@ const Button = struct {
         return null;
     }
 
-    pub fn render(self: *@This(), renderer: *Renderer, space: Rect) void {
+    pub fn render(self: *@This(), ctx: Context, space: Rect) void {
         const size = Vec2f{
             .x = @intToFloat(f32, space.w) / 2,
             .y = @intToFloat(f32, space.h) / 2,
@@ -180,7 +257,7 @@ const Button = struct {
         }).add(&size);
         self.rect = .{ .x = center.x, .y = center.y, .w = size.x, .h = size.y };
         const color = if (self.leftMouseBtnDown and self.hover) platform.Color{ .r = 255, .g = 255, .b = 255 } else platform.Color{ .r = 230, .g = 230, .b = 230 };
-        renderer.pushRect(center, size, color, 0);
+        ctx.renderer.pushRect(center, size, color, 0);
     }
 };
 
@@ -211,7 +288,7 @@ pub const Container = struct {
         return null;
     }
 
-    pub fn render(self: *@This(), component: *RenderedComponent, renderer: *Renderer, space: Rect) RenderingError!void {
+    pub fn render(self: *@This(), component: *RenderedComponent, renderer: Context, space: Rect) RenderingError!void {
         switch (self.layout) {
             .Flex => |orientation| {
                 const axisSize = switch (orientation) {

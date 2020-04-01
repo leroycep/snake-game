@@ -14,6 +14,7 @@ pub fn main() !void {
         .renderer = platform.Renderer.init(),
         .component_renderer = try platform.ComponentRenderer.init(alloc),
     };
+    defer context.component_renderer.deinit();
 
     app.onInit(&context);
 

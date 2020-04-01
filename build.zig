@@ -11,6 +11,7 @@ pub fn build(b: *Builder) void {
     exe.setBuildMode(b.standardReleaseOptions());
     exe.setTarget(target);
     exe.linkSystemLibrary("SDL2");
+    exe.linkSystemLibrary("freetype");
     exe.addIncludeDir("./c/include/");
     exe.addCSourceFile("./c/src/glad.c", &[_][]const u8{});
     exe.linkLibC();
