@@ -231,7 +231,15 @@ const Button = struct {
 
     pub fn onEvent(self: *@This(), event: platform.Event) ?platform.Event {
         switch (event) {
-            .MouseMotion => |pos| self.hover = self.rect.contains(Vec2f.fromVeci(&pos)),
+            .MouseMotion => |pos| {
+                const prev = self.hover;
+                self.hover = self.rect.contains(Vec2f.fromVeci(&pos));
+                if (!prev and self.hover) {
+                    if (self.events.hover) |hover| {
+                        return platform.Event{ .Custom = hover };
+                    }
+                }
+            },
             .MouseButtonDown => |ev| if (self.rect.contains(Vec2f.fromVeci(&ev.pos))) {
                 if (ev.button == .Left) {
                     self.leftMouseBtnDown = true;
