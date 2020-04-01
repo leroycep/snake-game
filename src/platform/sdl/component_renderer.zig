@@ -38,7 +38,7 @@ fn rgba(r: u8, g: u8, b: u8, a: u8) u32 {
     }
 }
 
-const KENNNEY_FUTURE_FONT = @embedFile("../../../assets/kenney_future.ttf");
+const ROBOTO_REGULAR_FONT = @embedFile("../../../assets/roboto-regular.ttf");
 
 const Character = struct {
     texture: GLuint,
@@ -71,12 +71,13 @@ pub const ComponentRenderer = struct {
         var face = try alloc.create(FT_Face);
         errdefer alloc.destroy(face);
 
-        ret = FT_New_Memory_Face(ft.*, KENNNEY_FUTURE_FONT, KENNNEY_FUTURE_FONT.len, 0, face);
+        const font = ROBOTO_REGULAR_FONT;
+        ret = FT_New_Memory_Face(ft.*, font, font.len, 0, face);
         if (ret != 0) {
             return error.FaceInitFailed;
         }
 
-        ret = FT_Set_Pixel_Sizes(face.*, 0, 48);
+        ret = FT_Set_Pixel_Sizes(face.*, 0, 20);
         if (ret != 0) {
             return error.SetFaceSizeFailed;
         }
@@ -84,10 +85,10 @@ pub const ComponentRenderer = struct {
         // Add all 128 ascii glyphs to map
         var characters = std.AutoHashMap(u32, Character).init(alloc);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        var char: u8 = 0;
-        while (char < 128) : (char += 1) {
+        var char: u32 = 32;
+        while (char <= 126) : (char += 1) {
             if (FT_Load_Char(face.*, char, FT_LOAD_RENDER) > 1) {
-                std.debug.warn("Failed to load freetype glyph: {c}\n", .{char});
+                std.debug.warn("Failed to load freetype glyph: {x}\n", .{char});
                 continue;
             }
             var texture: GLuint = 0;
@@ -212,12 +213,13 @@ const Text = struct {
             .x = @intToFloat(f32, space.w),
             .y = @intToFloat(f32, space.h),
         };
-        const center = (Vec2f{
+        const pos = (Vec2f{
             .x = @intToFloat(f32, space.x),
             .y = @intToFloat(f32, space.y),
-        }).add(&size.scalMul(0.5));
+        });
+        const center = pos.add(&size.scalMul(0.5));
         ctx.renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
-        renderText(ctx, self.text, center, .{ .r = 255, .g = 255, .b = 255 });
+        renderText(ctx, self.text, pos, .{ .wrapWidth = size.x });
     }
 };
 
@@ -485,16 +487,40 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
     }
 }
 
-pub fn renderText(ctx: Context, text: []const u8, pos: Vec2f, color: platform.Color) void {
-    var x = pos.x;
-    var y = pos.y;
+const RenderTextOptions = struct {
+    color: platform.Color = platform.Color{ .r = 0, .g = 0, .b = 0 },
+    wrapWidth: ?f32 = null,
+    lineHeight: f32 = 20,
+};
+
+pub fn renderText(ctx: Context, text: []const u8, pos: Vec2f, opts: RenderTextOptions) void {
+    var x: f32 = 0;
+    var y: f32 = opts.lineHeight;
     for (text) |c| {
-        const kv = ctx.characters.get(c) orelse unreachable;
+        if (c == '\n') {
+            continue;
+        }
+
+        const kv = ctx.characters.get(c) orelse {
+            std.debug.warn("Unknown character: {c}\n", .{c});
+            unreachable;
+        };
         const ch = kv.value;
+        const advance = @intToFloat(f32, ch.advance >> 6);
+        defer x += advance;
+
+        if (opts.wrapWidth) |wrapWidth| {
+            if (x + advance > wrapWidth) {
+                x = 0;
+                y += opts.lineHeight;
+            }
+        }
+
+        const extents = ch.size.scalMul(0.5);
 
         const dst = Rect2f{
-            .x = x + ch.bearing.x,
-            .y = y - ch.bearing.y,
+            .x = pos.x + x + ch.bearing.x + extents.x,
+            .y = pos.y + y - ch.bearing.y + extents.y,
             .w = ch.size.x,
             .h = ch.size.y,
         };
@@ -506,8 +532,6 @@ pub fn renderText(ctx: Context, text: []const u8, pos: Vec2f, color: platform.Co
             .h = 1.0,
         };
 
-        ctx.renderer.pushFontRect(dst, textureSrc, ch.texture, color);
-
-        x += @intToFloat(f32, ch.advance >> 6);
+        ctx.renderer.pushFontRect(dst, textureSrc, ch.texture, opts.color);
     }
 }
