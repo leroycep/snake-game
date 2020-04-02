@@ -6,7 +6,7 @@ pub const Vec2f = struct {
     x: f32,
     y: f32,
 
-    pub fn fromVeci(veci: *const Vec2) Vec2f {
+    pub fn fromVeci(veci: Vec2) Vec2f {
         return .{
             .x = @intToFloat(f32, veci.x),
             .y = @intToFloat(f32, veci.y),
@@ -20,39 +20,39 @@ pub const Vec2f = struct {
         };
     }
 
-    pub fn scalMul(self: *const Vec2f, scal: f32) Vec2f {
+    pub fn scalMul(self: Vec2f, scal: f32) Vec2f {
         return Vec2f{
             .x = self.x * scal,
             .y = self.y * scal,
         };
     }
 
-    pub fn dot(self: *const Vec2f, other: *const Vec2f) f32 {
+    pub fn dot(self: Vec2f, other: Vec2f) f32 {
         return self.x * other.x + self.y * other.y;
     }
 
-    pub fn mul(self: *const Vec2f, other: *const Vec2f) Vec2f {
+    pub fn mul(self: Vec2f, other: Vec2f) Vec2f {
         return .{
             .x = self.x * other.x,
             .y = self.y * other.y,
         };
     }
 
-    pub fn add(self: *const Vec2f, other: *const Vec2f) Vec2f {
+    pub fn add(self: Vec2f, other: Vec2f) Vec2f {
         return .{
             .x = self.x + other.x,
             .y = self.y + other.y,
         };
     }
 
-    pub fn sub(self: *const Vec2f, other: *const Vec2f) Vec2f {
+    pub fn sub(self: Vec2f, other: Vec2f) Vec2f {
         return .{
             .x = self.x - other.x,
             .y = self.y - other.y,
         };
     }
 
-    pub fn normalize(self: *const Vec2f) Vec2f {
+    pub fn normalize(self: Vec2f) Vec2f {
         const mag = self.magnitude();
         return Vec2f{
             .x = self.x / mag,
@@ -60,11 +60,11 @@ pub const Vec2f = struct {
         };
     }
 
-    pub fn magnitude(self: *const Vec2f) f32 {
+    pub fn magnitude(self: Vec2f) f32 {
         return @sqrt(self.x * self.x + self.y * self.y);
     }
 
-    pub fn rotate(self: *const Vec2f, radians: f32) Vec2f {
+    pub fn rotate(self: Vec2f, radians: f32) Vec2f {
         return .{
             .x = self.x * math.cos(radians) - self.y * math.sin(radians),
             .y = self.y * math.cos(radians) + self.x * math.sin(radians),

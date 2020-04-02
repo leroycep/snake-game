@@ -51,7 +51,7 @@ pub const Snake = struct {
         if (!self.dead) {
             const head_speed = @floatCast(f32, SNAKE_SPEED * delta);
             const head_movement = Vec2f.unitFromRad(self.head_segment.dir).scalMul(head_speed);
-            self.head_segment.pos = self.head_segment.pos.add(&head_movement);
+            self.head_segment.pos = self.head_segment.pos.add(head_movement);
 
             // Wrap head around screen
             if (self.head_segment.pos.x > LEVEL_OFFSET_X + LEVEL_WIDTH / 2.0) {
@@ -114,7 +114,7 @@ pub const Snake = struct {
 
             // Check if the head collides with this segment
             const cur_obb = OBB.init(cur_segment.pos, cur_segment.size, cur_segment.dir);
-            if (!self.dead and segment_idx > 1 and cur_obb.collides(&head_obb)) {
+            if (!self.dead and segment_idx > 1 and cur_obb.collides(head_obb)) {
                 self.dead = true;
                 self.head_segment.show = false;
             }

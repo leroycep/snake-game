@@ -217,7 +217,7 @@ const Text = struct {
         const center = (Vec2f{
             .x = @intToFloat(f32, space.x),
             .y = @intToFloat(f32, space.y),
-        }).add(&size.scalMul(0.5));
+        }).add(size.scalMul(0.5));
 
         ctx.renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
 
@@ -241,14 +241,14 @@ const Button = struct {
         switch (event) {
             .MouseMotion => |pos| {
                 const prev = self.hover;
-                self.hover = self.rect.contains(Vec2f.fromVeci(&pos));
+                self.hover = self.rect.contains(Vec2f.fromVeci(pos));
                 if (!prev and self.hover) {
                     if (self.events.hover) |hover| {
                         return platform.Event{ .Custom = hover };
                     }
                 }
             },
-            .MouseButtonDown => |ev| if (self.rect.contains(Vec2f.fromVeci(&ev.pos))) {
+            .MouseButtonDown => |ev| if (self.rect.contains(Vec2f.fromVeci(ev.pos))) {
                 if (ev.button == .Left) {
                     self.leftMouseBtnDown = true;
                 }
@@ -256,7 +256,7 @@ const Button = struct {
             .MouseButtonUp => |ev| if (self.leftMouseBtnDown) {
                 if (ev.button == .Left) {
                     self.leftMouseBtnDown = false;
-                    if (self.rect.contains(Vec2f.fromVeci(&ev.pos))) {
+                    if (self.rect.contains(Vec2f.fromVeci(ev.pos))) {
                         if (self.events.click) |click| {
                             return platform.Event{ .Custom = click };
                         }
@@ -276,7 +276,7 @@ const Button = struct {
         const center = (Vec2f{
             .x = @intToFloat(f32, space.x),
             .y = @intToFloat(f32, space.y),
-        }).add(&size);
+        }).add(size);
         self.rect = .{ .x = center.x, .y = center.y, .w = size.x, .h = size.y };
         const color = if (self.leftMouseBtnDown and self.hover) platform.Color{ .r = 255, .g = 255, .b = 255 } else platform.Color{ .r = 230, .g = 230, .b = 230 };
         ctx.renderer.pushRect(center, size, color, 0);

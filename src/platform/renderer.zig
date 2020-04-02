@@ -240,10 +240,10 @@ pub const Renderer = struct {
         }
         self.mode = .Normal;
 
-        const top_left = (Vec2f{ .x = -size.x / 2, .y = -size.y / 2 }).rotate(rot).add(&pos);
-        const top_right = (Vec2f{ .x = size.x / 2, .y = -size.y / 2 }).rotate(rot).add(&pos);
-        const bot_left = (Vec2f{ .x = -size.x / 2, .y = size.y / 2 }).rotate(rot).add(&pos);
-        const bot_right = (Vec2f{ .x = size.x / 2, .y = size.y / 2 }).rotate(rot).add(&pos);
+        const top_left = (Vec2f{ .x = -size.x / 2, .y = -size.y / 2 }).rotate(rot).add(pos);
+        const top_right = (Vec2f{ .x = size.x / 2, .y = -size.y / 2 }).rotate(rot).add(pos);
+        const bot_left = (Vec2f{ .x = -size.x / 2, .y = size.y / 2 }).rotate(rot).add(pos);
+        const bot_right = (Vec2f{ .x = size.x / 2, .y = size.y / 2 }).rotate(rot).add(pos);
 
         const top_left_vert = self.pushVert(top_left, color);
         const top_right_vert = self.pushVert(top_right, color);

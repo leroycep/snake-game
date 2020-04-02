@@ -82,7 +82,7 @@ pub const Game = struct {
         if (!self.snake.dead) {
             if (self.food_pos) |pos| {
                 // If the head is close to the fruit
-                if (pos.sub(&self.snake.head_segment.pos).magnitude() < (SNAKE_SEGMENT_LENGTH + 20) / 2) {
+                if (pos.sub(self.snake.head_segment.pos).magnitude() < (SNAKE_SEGMENT_LENGTH + 20) / 2) {
                     // Eat it
                     self.food_pos = null;
                     self.snake.addSegment();
