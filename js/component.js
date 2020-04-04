@@ -2,14 +2,22 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
   const TAGS = {
     1: "div",
     2: "p",
-    3: "button"
+    3: "button",
   };
 
   const CLASSES = {
     1: "horizontal",
     2: "vertical",
     3: "flex",
-    4: "grid"
+    4: "grid",
+    5: "main_start",
+    6: "main_center",
+    7: "main_end",
+    8: "main_space_between",
+    9: "main_space_around",
+    10: "cross_start",
+    11: "cross_center",
+    12: "cross_end",
   };
 
   let elements = [];
@@ -17,7 +25,7 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
   let clickEvents = {};
   let hoverEvents = {};
 
-  const encodeArea = areaInt => {
+  const encodeArea = (areaInt) => {
     const CIPHER = {
       "0": "a",
       "1": "b",
@@ -28,7 +36,7 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       "6": "g",
       "7": "h",
       "8": "i",
-      "9": "j"
+      "9": "j",
     };
     let str = "";
     let rawStr = areaInt.toString();
@@ -59,7 +67,7 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       elements = [];
     },
 
-    element_create: tag => {
+    element_create: (tag) => {
       let elementStr = TAGS[tag];
       if (elementStr === undefined) {
         console.log("Unknown tag number, rendering component as a div");
@@ -72,7 +80,7 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       return id;
     },
 
-    element_remove: elemId => {
+    element_remove: (elemId) => {
       if (elemId < elements.length && !unused_ids.includes(elemId)) {
         elements[elemId].remove();
         elements[elemId] = null;
@@ -117,7 +125,7 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       elements[elemId].classList.add(classStr);
     },
 
-    element_clearClasses: elemId => {
+    element_clearClasses: (elemId) => {
       elements[elemId].className = "component";
     },
 
@@ -167,7 +175,7 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
       const parentElem = elements[parentElemId];
       const childElem = elements[childElemId];
       parentElem.appendChild(childElem);
-    }
+    },
   };
 };
 
