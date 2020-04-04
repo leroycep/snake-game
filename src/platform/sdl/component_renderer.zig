@@ -39,6 +39,7 @@ fn rgba(r: u8, g: u8, b: u8, a: u8) u32 {
 }
 
 const ROBOTO_REGULAR_FONT = @embedFile("../../../assets/roboto-regular.ttf");
+const FONT_SIZE = 20;
 
 const Character = struct {
     texture: GLuint,
@@ -51,6 +52,9 @@ const Context = struct {
     alloc: *std.mem.Allocator,
     renderer: *platform.Renderer,
     characters: *std.AutoHashMap(u32, Character),
+    face_line_height: i64,
+    face_ascender: i64,
+    face_descender: i64,
 };
 
 pub const ComponentRenderer = struct {
@@ -59,6 +63,9 @@ pub const ComponentRenderer = struct {
     freetype: *FT_Library,
     face: *FT_Face,
     characters: std.AutoHashMap(u32, Character),
+    face_line_height: i64,
+    face_ascender: i64,
+    face_descender: i64,
 
     pub fn init(alloc: *std.mem.Allocator) !@This() {
         var ft = try alloc.create(FT_Library);
@@ -78,7 +85,7 @@ pub const ComponentRenderer = struct {
             return error.FaceInitFailed;
         }
 
-        ret = FT_Set_Pixel_Sizes(face.*, 0, 20);
+        ret = FT_Set_Pixel_Sizes(face.*, 0, FONT_SIZE);
         if (ret != 0) {
             return error.SetFaceSizeFailed;
         }
@@ -123,6 +130,9 @@ pub const ComponentRenderer = struct {
             .freetype = ft,
             .face = face,
             .characters = characters,
+            .face_line_height = face.*.*.size.*.metrics.height,
+            .face_ascender = face.*.*.size.*.metrics.ascender,
+            .face_descender = face.*.*.size.*.metrics.descender,
         };
     }
 
@@ -149,7 +159,14 @@ pub const ComponentRenderer = struct {
                 .w = screen_size.x,
                 .h = screen_size.y,
             };
-            component.render(.{ .alloc = self.alloc, .renderer = renderer, .characters = &self.characters }, space) catch unreachable;
+            component.render(.{
+                .alloc = self.alloc,
+                .renderer = renderer,
+                .characters = &self.characters,
+                .face_line_height = self.face_line_height,
+                .face_ascender = self.face_ascender,
+                .face_descender = self.face_descender,
+            }, space) catch unreachable;
         }
     }
 
@@ -599,7 +616,7 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
 
 const TextSizeHintOptions = struct {
     wrapWidth: ?i32 = null,
-    lineHeight: i32 = 20,
+    lineHeight: f32 = 1,
 };
 
 const SizeHint = struct {
@@ -613,6 +630,8 @@ pub fn getTextSizeHint(ctx: Context, text: []const u8, opts: TextSizeHintOptions
         const ch = kv.value;
         break :get_space_width @intCast(i32, ch.advance >> 6);
     };
+
+    const line_height = @floatToInt(i32, @intToFloat(f32, ctx.face_line_height >> 6) * opts.lineHeight);
 
     var pos = platform.Vec2{ .x = 0, .y = 0 };
     var word_width: i32 = 0;
@@ -642,7 +661,7 @@ pub fn getTextSizeHint(ctx: Context, text: []const u8, opts: TextSizeHintOptions
 
                     if (opts.wrapWidth) |wrapWidth| {
                         if (pos.x > wrapWidth and !wrapped_for_word) {
-                            pos.y += opts.lineHeight;
+                            pos.y += line_height;
                             pos.x = word_width;
                             wrapped_for_word = true;
                         }
@@ -664,7 +683,7 @@ pub fn getTextSizeHint(ctx: Context, text: []const u8, opts: TextSizeHintOptions
 
                     if (opts.wrapWidth) |wrapWidth| {
                         if (pos.x > wrapWidth and !wrapped_for_word) {
-                            pos.y += opts.lineHeight;
+                            pos.y += line_height;
                             pos.x = word_width;
                             wrapped_for_word = true;
                         }
@@ -677,16 +696,18 @@ pub fn getTextSizeHint(ctx: Context, text: []const u8, opts: TextSizeHintOptions
         }
     }
 
+    const vpadding = @intCast(i32, (ctx.face_ascender + ctx.face_descender) >> 6);
+
     return .{
-        .min = .{ .x = max_word_width, .y = pos.y + opts.lineHeight },
-        .max = .{ .x = max_x, .y = num_words * opts.lineHeight },
+        .min = .{ .x = max_word_width, .y = pos.y + line_height + vpadding },
+        .max = .{ .x = max_x, .y = num_words * line_height },
     };
 }
 
 const RenderTextOptions = struct {
     color: platform.Color = platform.Color{ .r = 0, .g = 0, .b = 0 },
     wrapWidth: ?f32 = null,
-    lineHeight: f32 = 20,
+    lineHeight: f32 = 1,
 };
 
 const Glyph = struct {
@@ -703,6 +724,8 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
     };
     var words = std.ArrayList(Word).init(ctx.alloc);
     defer words.deinit();
+
+    const line_height = @intToFloat(f32, ctx.face_line_height >> 6) * opts.lineHeight;
 
     const space_width = get_space_width: {
         const kv = ctx.characters.get(' ').?;
@@ -751,11 +774,10 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
 
     var width = if (opts.wrapWidth) |wwidth| std.math.min(total_width, wwidth) else total_width;
     var offsetx = -width / 2;
-    var offsety = if (opts.wrapWidth == null) -opts.lineHeight / 2 else 0;
 
     var isFirst = true;
     var x: f32 = 0;
-    var y: f32 = opts.lineHeight;
+    var y: f32 = @intToFloat(f32, (ctx.face_line_height + ctx.face_ascender) >> 6); // TODO: make first line height of face bbox
     for (words.span()) |word| {
         // Add a space between each word
         if (!isFirst) {
@@ -767,7 +789,7 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
             // Make a new line if the word would make it too long
             if (x + word.width > wrapWidth) {
                 x = 0;
-                y += opts.lineHeight;
+                y += line_height;
             }
         }
 
@@ -785,7 +807,7 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
 
             const dst = Rect2f{
                 .x = offsetx + x + ch.bearing.x + extents.x,
-                .y = offsety + y - ch.bearing.y + extents.y,
+                .y = y - ch.bearing.y + extents.y,
                 .w = ch.size.x,
                 .h = ch.size.y,
             };
@@ -806,11 +828,9 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
         }
     }
 
-    const total_height = y + opts.lineHeight;
-    if (opts.wrapWidth != null) {
-        for (glyphs.span()) |*g| {
-            g.dst.y -= total_height / 2;
-        }
+    const total_height = y + @intToFloat(f32, ctx.face_line_height >> 6);
+    for (glyphs.span()) |*g| {
+        g.dst.y -= total_height / 2;
     }
 
     return glyphs;
