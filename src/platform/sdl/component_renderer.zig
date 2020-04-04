@@ -251,7 +251,7 @@ const Text = struct {
             .y = @intToFloat(f32, space.y),
         }).add(size.scalMul(0.5));
 
-        ctx.renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
+        ctx.renderer.pushRect(center, size, .{ .r = 200, .g = 230, .b = 200 }, 0);
 
         for (self.glyphs.span()) |g| {
             ctx.renderer.pushFontRect(g.dst.translate(center), g.uv, g.texture, g.color);
@@ -380,6 +380,10 @@ pub const Container = struct {
                     .Horizontal => space.w,
                     .Vertical => space.h,
                 };
+                const crossAxisSize = switch (flex.orientation) {
+                    .Horizontal => space.h,
+                    .Vertical => space.w,
+                };
 
                 var main_sizes = try std.ArrayList(i32).initCapacity(self.alloc, self.children.span().len);
                 defer main_sizes.deinit();
@@ -411,17 +415,32 @@ pub const Container = struct {
                 for (self.children.span()) |*child, idx| {
                     const size = main_sizes.span()[idx];
                     defer pos += size + blank_space_after;
+                    const hint = child.size_hint(renderer, .{
+                        .x = 0,
+                        .y = 0,
+                        .w = if (flex.orientation == .Horizontal) size else space.w,
+                        .h = if (flex.orientation == .Vertical) size else space.h,
+                    });
+                    const crossSize = switch (flex.orientation) {
+                        .Horizontal => hint.min.y,
+                        .Vertical => hint.min.x,
+                    };
+                    const crossPos = switch (flex.cross_axis_alignment) {
+                        .Start => 0,
+                        .Center => @divFloor((crossAxisSize - crossSize), 2),
+                        .End => crossAxisSize - crossSize,
+                    };
                     const childSpace = switch (flex.orientation) {
                         .Horizontal => Rect{
                             .x = space.x + pos,
-                            .y = space.y,
+                            .y = space.y + crossPos,
                             .w = size,
-                            .h = space.h,
+                            .h = crossSize,
                         },
                         .Vertical => Rect{
-                            .x = space.x,
+                            .x = space.x + crossPos,
                             .y = space.y + pos,
-                            .w = space.w,
+                            .w = crossSize,
                             .h = size,
                         },
                     };
