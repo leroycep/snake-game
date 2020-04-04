@@ -234,8 +234,12 @@ pub const Renderer = struct {
         defer self.font_indIdx += 1;
     }
 
+    fn wouldOverflow(self: *Renderer, numVerts: usize, numInd: usize) bool {
+        return (self.vertIdx + numVerts) * NUM_ATTR >= self.verts.len or self.indIdx + numInd >= self.indices.len;
+    }
+
     fn pushRect(self: *Renderer, pos: Vec2f, size: Vec2f, color: platform.Color, rot: f32) void {
-        if (self.mode != .Normal) {
+        if (self.mode != .Normal or self.wouldOverflow(4, 6)) {
             self.flush();
         }
         self.mode = .Normal;
@@ -259,8 +263,12 @@ pub const Renderer = struct {
         self.pushElem(bot_left_vert);
     }
 
+    fn fontWouldOverflow(self: *Renderer, numVerts: usize, numInd: usize) bool {
+        return (self.font_vertIdx + numVerts) * FONT_ATTR >= self.font_verts.len or self.font_indIdx + numInd >= self.font_indices.len;
+    }
+
     fn pushFontRect(self: *Renderer, dst: Rect2f, uv: Rect2f, texture: platform.GLuint, color: platform.Color) void {
-        if (self.mode != .Font or self.font_texture != texture) {
+        if (self.mode != .Font or self.font_texture != texture or self.fontWouldOverflow(4, 6)) {
             self.flush();
         }
         self.mode = .Font;
