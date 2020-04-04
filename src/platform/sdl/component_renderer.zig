@@ -268,8 +268,6 @@ const Text = struct {
             .y = @intToFloat(f32, space.y),
         }).add(size.scalMul(0.5));
 
-        ctx.renderer.pushRect(center, size, .{ .r = 200, .g = 230, .b = 200 }, 0);
-
         for (self.glyphs.span()) |g| {
             ctx.renderer.pushFontRect(g.dst.translate(center), g.uv, g.texture, g.color);
         }
