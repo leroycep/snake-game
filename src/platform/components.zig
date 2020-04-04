@@ -29,6 +29,14 @@ pub const Container = struct {
 
 pub const Mode = enum { Flex, Grid };
 pub const Orientation = enum { Horizontal, Vertical };
+pub const MainAlign = enum { Start, Center, End, SpaceBetween, SpaceAround };
+pub const CrossAlign = enum { Start, Center, End };
+
+pub const FlexLayout = struct {
+    orientation: Orientation,
+    main_axis_alignment: MainAlign = .Center,
+    cross_axis_alignment: CrossAlign = .Center,
+};
 
 pub const GridTemplate = struct {
     /// A 2d array of areas, with each number representing the index of the
@@ -77,7 +85,7 @@ pub const GridTemplate = struct {
 };
 
 pub const Layout = union(Mode) {
-    Flex: Orientation,
+    Flex: FlexLayout,
     Grid: GridTemplate,
 
     pub fn grid(template: GridTemplate) @This() {
@@ -85,7 +93,11 @@ pub const Layout = union(Mode) {
     }
 
     pub fn flex(orientation: Orientation) @This() {
-        return .{ .Flex = orientation };
+        return .{ .Flex = .{ .orientation = orientation } };
+    }
+
+    pub fn flex_ex(layout: FlexLayout) @This() {
+        return .{ .Flex = layout };
     }
 
     pub fn is_valid(self: *const @This(), children: []Component) bool {

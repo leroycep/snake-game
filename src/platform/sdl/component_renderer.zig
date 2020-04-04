@@ -319,14 +319,14 @@ pub const Container = struct {
 
     pub fn render(self: *@This(), component: *RenderedComponent, renderer: Context, space: Rect) RenderingError!void {
         switch (self.layout) {
-            .Flex => |orientation| {
-                const axisSize = switch (orientation) {
+            .Flex => |flex| {
+                const axisSize = switch (flex.orientation) {
                     .Horizontal => space.w,
                     .Vertical => space.h,
                 };
                 const space_per_component = @divTrunc(axisSize, @intCast(i32, self.children.span().len));
                 for (self.children.span()) |*child, idx| {
-                    const childSpace = switch (orientation) {
+                    const childSpace = switch (flex.orientation) {
                         .Horizontal => Rect{
                             .x = space.x + space_per_component * @intCast(i32, idx),
                             .y = space.y,

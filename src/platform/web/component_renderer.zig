@@ -14,6 +14,15 @@ pub const CLASS_VERTICAL: u32 = 2;
 pub const CLASS_FLEX: u32 = 3;
 pub const CLASS_GRID: u32 = 4;
 
+pub const CLASS_FLEX_MAIN_START: u32 = 5;
+pub const CLASS_FLEX_MAIN_CENTER: u32 = 6;
+pub const CLASS_FLEX_MAIN_END: u32 = 7;
+pub const CLASS_FLEX_MAIN_SPACE_BETWEEN: u32 = 8;
+pub const CLASS_FLEX_MAIN_SPACE_AROUND: u32 = 9;
+pub const CLASS_FLEX_CROSS_START: u32 = 10;
+pub const CLASS_FLEX_CROSS_CENTER: u32 = 11;
+pub const CLASS_FLEX_CROSS_END: u32 = 12;
+
 pub extern fn element_create(tag: u32) u32;
 pub extern fn element_remove(element: u32) void;
 pub extern fn element_setTextS(element: u32, textPtr: [*]const u8, textLen: c_uint) void;
@@ -281,11 +290,23 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
 
 pub fn apply_layout(element: u32, layout: *const Layout) void {
     switch (layout.*) {
-        .Flex => |orientation| {
+        .Flex => |flex| {
             element_addClass(element, CLASS_FLEX);
-            element_addClass(element, switch (orientation) {
+            element_addClass(element, switch (flex.orientation) {
                 .Horizontal => CLASS_HORIZONTAL,
                 .Vertical => CLASS_VERTICAL,
+            });
+            element_addClass(element, switch (flex.main_axis_alignment) {
+                .Start => CLASS_FLEX_MAIN_START,
+                .Center => CLASS_FLEX_MAIN_CENTER,
+                .End => CLASS_FLEX_MAIN_END,
+                .SpaceBetween => CLASS_FLEX_MAIN_SPACE_BETWEEN,
+                .SpaceAround => CLASS_FLEX_MAIN_SPACE_AROUND,
+            });
+            element_addClass(element, switch (flex.cross_axis_alignment) {
+                .Start => CLASS_FLEX_CROSS_START,
+                .Center => CLASS_FLEX_CROSS_CENTER,
+                .End => CLASS_FLEX_CROSS_END,
             });
         },
         .Grid => |template| {

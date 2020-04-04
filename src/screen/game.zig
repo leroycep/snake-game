@@ -136,7 +136,11 @@ pub const Game = struct {
         const time_str = std.fmt.bufPrint(buffer[0..50], "Time: {d:.2}", .{self.time}) catch unreachable;
         const score_str = std.fmt.bufPrint(buffer[50..], "Score: {}", .{self.score}) catch unreachable;
 
-        const component = box(Layout.flex(.Horizontal), &[_]Component{
+        const component = box(Layout.flex_ex(.{
+            .orientation = .Horizontal,
+            .main_axis_alignment = .SpaceBetween,
+            .cross_axis_alignment = .Start,
+        }), &[_]Component{
             text(score_str),
             text(time_str),
         });

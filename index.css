@@ -52,3 +52,29 @@ body {
 .component.grid {
     display: grid;
 }
+
+.component.main_start {
+    justify-content: flex-start;
+}
+.component.main_center {
+    justify-content: center;
+}
+.component.main_end {
+    justify-content: flex-end;
+}
+.component.main_space_between {
+    justify-content: space-between;
+}
+.component.main_space_around {
+    justify-content: space-around;
+}
+
+.component.cross_start {
+    align-items: flex-start;
+}
+.component.cross_center {
+    align-items: center;
+}
+.component.cross_end {
+    align-items: flex-end;
+}
