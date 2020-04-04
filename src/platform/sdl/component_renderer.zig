@@ -165,32 +165,25 @@ pub const ComponentRenderer = struct {
     }
 };
 
-const RenderedComponent = struct {
-    alloc: *std.mem.Allocator,
-    component: union(ComponentTag) {
-        Text: Text,
-        Button: Button,
-        Container: Container,
-
-        pub fn deinit(self: *@This(), component: *RenderedComponent) void {
-            switch (self.*) {
-                .Text => |text| component.alloc.free(text.text),
-                .Button => |button| component.alloc.free(button.text),
-                .Container => |*container| container.deinit(component),
-            }
-        }
-    },
+const RenderedComponent = union(ComponentTag) {
+    Text: Text,
+    Button: Button,
+    Container: Container,
 
     pub fn remove(self: *@This()) void {
-        self.component.deinit(self);
+        self.deinit(self);
     }
 
     pub fn deinit(self: *@This()) void {
-        self.component.deinit(self);
+        switch (self.*) {
+            .Text => |*text| text.deinit(),
+            .Button => |*button| button.deinit(),
+            .Container => |*container| container.deinit(),
+        }
     }
 
     pub fn onEvent(self: *@This(), event: platform.Event) ?platform.Event {
-        return switch (self.component) {
+        return switch (self.*) {
             .Text => null,
             .Button => |*self_button| self_button.onEvent(event),
             .Container => |*self_container| self_container.onEvent(event),
@@ -198,16 +191,21 @@ const RenderedComponent = struct {
     }
 
     pub fn render(self: *@This(), renderer: Context, space: Rect) RenderingError!void {
-        switch (self.component) {
+        switch (self.*) {
             .Text => |*self_text| self_text.render(renderer, space),
             .Button => |*self_button| self_button.render(renderer, space),
-            .Container => |*self_container| try self_container.render(self, renderer, space),
+            .Container => |*self_container| try self_container.render(renderer, space),
         }
     }
 };
 
 const Text = struct {
+    alloc: *std.mem.Allocator,
     text: []const u8,
+
+    pub fn deinit(self: *@This()) void {
+        self.alloc.free(self.text);
+    }
 
     pub fn render(self: *@This(), ctx: Context, space: Rect) void {
         const size = Vec2f{
@@ -230,12 +228,17 @@ const Text = struct {
 };
 
 const Button = struct {
+    alloc: *std.mem.Allocator,
     text: []const u8,
     events: Events,
 
     rect: Rect2f = Rect2f{ .x = 0, .y = 0, .w = 0, .h = 0 },
     leftMouseBtnDown: bool = false,
     hover: bool = false,
+
+    pub fn deinit(self: *@This()) void {
+        self.alloc.free(self.text);
+    }
 
     pub fn onEvent(self: *@This(), event: platform.Event) ?platform.Event {
         switch (event) {
@@ -291,6 +294,7 @@ const Button = struct {
 };
 
 pub const Container = struct {
+    alloc: *std.mem.Allocator,
     layout: Layout,
     children: std.ArrayList(RenderedComponent),
 
@@ -301,7 +305,7 @@ pub const Container = struct {
         self.children.resize(0) catch unreachable;
     }
 
-    pub fn deinit(self: *@This(), component: *RenderedComponent) void {
+    pub fn deinit(self: *@This()) void {
         for (self.children.span()) |*child| {
             child.deinit();
         }
@@ -317,7 +321,7 @@ pub const Container = struct {
         return null;
     }
 
-    pub fn render(self: *@This(), component: *RenderedComponent, renderer: Context, space: Rect) RenderingError!void {
+    pub fn render(self: *@This(), renderer: Context, space: Rect) RenderingError!void {
         switch (self.layout) {
             .Flex => |flex| {
                 const axisSize = switch (flex.orientation) {
@@ -350,7 +354,7 @@ pub const Container = struct {
                         // space cell takes up in the areas array
                         rect: Rect,
                     };
-                    var spots = std.ArrayList(Cell).init(component.alloc);
+                    var spots = std.ArrayList(Cell).init(self.alloc);
                     defer spots.deinit();
                     var x: usize = 0;
                     var y: usize = 0;
@@ -463,20 +467,18 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
     switch (component.*) {
         .Text => |text| {
             return RenderedComponent{
-                .alloc = alloc,
-                .component = .{
-                    .Text = .{ .text = try std.mem.dupe(alloc, u8, text) },
+                .Text = .{
+                    .alloc = alloc,
+                    .text = try std.mem.dupe(alloc, u8, text),
                 },
             };
         },
         .Button => |button| {
             return RenderedComponent{
-                .alloc = alloc,
-                .component = .{
-                    .Button = .{
-                        .text = try std.mem.dupe(alloc, u8, button.text),
-                        .events = button.events,
-                    },
+                .Button = .{
+                    .alloc = alloc,
+                    .text = try std.mem.dupe(alloc, u8, button.text),
+                    .events = button.events,
                 },
             };
         },
@@ -488,12 +490,10 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
             }
 
             return RenderedComponent{
-                .alloc = alloc,
-                .component = .{
-                    .Container = .{
-                        .layout = container.layout,
-                        .children = rendered_children,
-                    },
+                .Container = .{
+                    .alloc = alloc,
+                    .layout = container.layout,
+                    .children = rendered_children,
                 },
             };
         },
