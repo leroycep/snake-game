@@ -30,9 +30,6 @@ pub const Game = struct {
     score: u32 = 0,
     quit_pressed: bool = false,
 
-    score_str: []const u8 = &[_]u8{},
-    time_str: []const u8 = &[_]u8{},
-
     pub fn init(alloc: *std.mem.Allocator) !*@This() {
         const self = try alloc.create(@This());
         self.* = .{
@@ -135,19 +132,13 @@ pub const Game = struct {
         const box = components.box;
         const text = components.text;
 
-        if (self.time_str.len != 0) {
-            self.alloc.free(self.time_str);
-        }
-        if (self.score_str.len != 0) {
-            self.alloc.free(self.score_str);
-        }
-
-        self.time_str = std.fmt.allocPrint(self.alloc, "Time: {d:.2}", .{self.time}) catch unreachable;
-        self.score_str = std.fmt.allocPrint(self.alloc, "Score: {}", .{self.score}) catch unreachable;
+        var buffer: [100]u8 = undefined;
+        const time_str = std.fmt.bufPrint(buffer[0..50], "Time: {d:.2}", .{self.time}) catch unreachable;
+        const score_str = std.fmt.bufPrint(buffer[50..], "Score: {}", .{self.score}) catch unreachable;
 
         const component = box(Layout.flex(.Horizontal), &[_]Component{
-            text(self.score_str),
-            text(self.time_str),
+            text(score_str),
+            text(time_str),
         });
         context.updateComponent(&component) catch unreachable;
     }
