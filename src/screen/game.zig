@@ -42,6 +42,7 @@ pub const Game = struct {
                 .updateFn = update,
                 .renderFn = render,
                 .deinitFn = deinit,
+                .stopFn = stop,
             },
 
             .random = std.rand.DefaultPrng.init(platform.now()),
@@ -149,6 +150,11 @@ pub const Game = struct {
             text(self.time_str),
         });
         context.updateComponent(&component) catch unreachable;
+    }
+
+    pub fn stop(screenPtr: *Screen, context: *Context) void {
+        const self = @fieldParentPtr(@This(), "screen", screenPtr);
+        context.clearComponent();
     }
 
     pub fn deinit(screenPtr: *Screen, context: *Context) void {
