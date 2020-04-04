@@ -190,24 +190,58 @@ const RenderedComponent = union(ComponentTag) {
         };
     }
 
+    pub fn size_hint(self: *@This(), ctx: Context, space: Rect) SizeHint {
+        return switch (self.*) {
+            .Text => |*text| text.size_hint(ctx, space),
+            .Button => .{ .min = .{ .x = 0, .y = 0 }, .max = .{ .x = space.w, .y = space.h } },
+            .Container => .{ .min = .{ .x = 0, .y = 0 }, .max = .{ .x = space.w, .y = space.h } },
+        };
+    }
+
     pub fn render(self: *@This(), renderer: Context, space: Rect) RenderingError!void {
-        switch (self.*) {
+        return switch (self.*) {
             .Text => |*self_text| self_text.render(renderer, space),
             .Button => |*self_button| self_button.render(renderer, space),
             .Container => |*self_container| try self_container.render(renderer, space),
-        }
+        };
     }
 };
 
 const Text = struct {
     alloc: *std.mem.Allocator,
     text: []const u8,
+    glyphs: std.ArrayList(Glyph),
+    prev_size: platform.Vec2,
+
+    pub fn init(alloc: *std.mem.Allocator, text: []const u8) !@This() {
+        return @This(){
+            .alloc = alloc,
+            .text = try std.mem.dupe(alloc, u8, text),
+            .glyphs = std.ArrayList(Glyph).init(alloc),
+            .prev_size = .{ .x = 0, .y = 0 },
+        };
+    }
 
     pub fn deinit(self: *@This()) void {
         self.alloc.free(self.text);
+        self.glyphs.deinit();
     }
 
-    pub fn render(self: *@This(), ctx: Context, space: Rect) void {
+    pub fn size_hint(self: *@This(), ctx: Context, space: Rect) SizeHint {
+        return getTextSizeHint(ctx, self.text, .{ .wrapWidth = space.w });
+    }
+
+    pub fn update_glyphs(self: *@This(), ctx: Context, space: Rect) !void {
+        self.glyphs.deinit();
+        self.glyphs = try renderText(ctx, self.text, .{ .wrapWidth = @intToFloat(f32, space.w) });
+        self.prev_size = .{ .x = space.w, .y = space.h };
+    }
+
+    pub fn render(self: *@This(), ctx: Context, space: Rect) RenderingError!void {
+        if (self.prev_size.x != space.w or self.prev_size.y != space.h) {
+            try self.update_glyphs(ctx, space);
+        }
+
         const size = Vec2f{
             .x = @intToFloat(f32, space.w),
             .y = @intToFloat(f32, space.h),
@@ -219,9 +253,7 @@ const Text = struct {
 
         ctx.renderer.pushRect(center, size.scalMul(0.8), .{ .r = 200, .g = 230, .b = 200 }, 0);
 
-        const glyphs = renderText(ctx, self.text, .{ .wrapWidth = size.x }) catch unreachable;
-        defer glyphs.deinit();
-        for (glyphs.span()) |g| {
+        for (self.glyphs.span()) |g| {
             ctx.renderer.pushFontRect(g.dst.translate(center), g.uv, g.texture, g.color);
         }
     }
@@ -324,24 +356,73 @@ pub const Container = struct {
     pub fn render(self: *@This(), renderer: Context, space: Rect) RenderingError!void {
         switch (self.layout) {
             .Flex => |flex| {
+                var size_hints = try std.ArrayList(SizeHint).initCapacity(self.alloc, self.children.span().len);
+                defer size_hints.deinit();
+
+                // The total amount requested from SizeHint.max
+                var total_requested: i32 = 0;
+                var total_min_requested: i32 = 0;
+
+                for (self.children.span()) |*child| {
+                    const size_hint = child.size_hint(renderer, space);
+                    total_requested += switch (flex.orientation) {
+                        .Horizontal => size_hint.max.x,
+                        .Vertical => size_hint.max.y,
+                    };
+                    total_min_requested += switch (flex.orientation) {
+                        .Horizontal => size_hint.min.x,
+                        .Vertical => size_hint.min.y,
+                    };
+                    try size_hints.append(size_hint);
+                }
+
                 const axisSize = switch (flex.orientation) {
                     .Horizontal => space.w,
                     .Vertical => space.h,
                 };
-                const space_per_component = @divTrunc(axisSize, @intCast(i32, self.children.span().len));
+
+                var main_sizes = try std.ArrayList(i32).initCapacity(self.alloc, self.children.span().len);
+                defer main_sizes.deinit();
+
+                if (total_requested > axisSize) {
+                    unreachable; // TODO: shrink each component until it fits
+                } else {
+                    for (size_hints.span()) |hint| {
+                        const size = switch (flex.orientation) {
+                            .Horizontal => hint.max.x,
+                            .Vertical => hint.max.y,
+                        };
+                        try main_sizes.append(size);
+                    }
+                }
+
+                const num_children = @intCast(i32, self.children.span().len);
+                var pos: i32 = switch (flex.main_axis_alignment) {
+                    .Start, .SpaceBetween => 0,
+                    .Center => if (total_requested < axisSize) @divFloor((axisSize - total_requested), 2) else 0,
+                    .End => if (total_requested < axisSize) axisSize - total_requested else 0,
+                    .SpaceAround => if (total_requested < axisSize) @divFloor(axisSize - total_requested, num_children * 2) else 0,
+                };
+                const blank_space_after: i32 = switch (flex.main_axis_alignment) {
+                    .Start, .Center, .End => 0,
+                    .SpaceAround => if (total_requested < axisSize) @divFloor(axisSize - total_requested, num_children) else 0,
+                    .SpaceBetween => if (total_requested < axisSize) @divFloor(axisSize - total_requested, num_children - 1) else 0,
+                };
                 for (self.children.span()) |*child, idx| {
+                    const size = main_sizes.span()[idx];
+                    defer pos += size + blank_space_after;
                     const childSpace = switch (flex.orientation) {
                         .Horizontal => Rect{
-                            .x = space.x + space_per_component * @intCast(i32, idx),
+                            .x = space.x + pos,
                             .y = space.y,
-                            .w = space_per_component,
+                            .w = size,
                             .h = space.h,
                         },
                         .Vertical => Rect{
                             .x = space.x,
-                            .y = space.y + space_per_component * @intCast(i32, idx),
+                            .y = space.y + pos,
                             .w = space.w,
-                            .h = space_per_component,
+                            .h = size,
                         },
                     };
                     try child.render(renderer, childSpace);
@@ -467,10 +548,7 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
     switch (component.*) {
         .Text => |text| {
             return RenderedComponent{
-                .Text = .{
-                    .alloc = alloc,
-                    .text = try std.mem.dupe(alloc, u8, text),
-                },
+                .Text = try Text.init(alloc, text),
             };
         },
         .Button => |button| {
@@ -498,6 +576,92 @@ pub fn componentToRendered(alloc: *std.mem.Allocator, component: *const Componen
             };
         },
     }
+}
+
+const TextSizeHintOptions = struct {
+    wrapWidth: ?i32 = null,
+    lineHeight: i32 = 20,
+};
+
+const SizeHint = struct {
+    min: platform.Vec2,
+    max: platform.Vec2,
+};
+
+pub fn getTextSizeHint(ctx: Context, text: []const u8, opts: TextSizeHintOptions) SizeHint {
+    const space_width = get_space_width: {
+        const kv = ctx.characters.get(' ').?;
+        const ch = kv.value;
+        break :get_space_width @intCast(i32, ch.advance >> 6);
+    };
+
+    var pos = platform.Vec2{ .x = 0, .y = 0 };
+    var word_width: i32 = 0;
+    var max_word_width = word_width;
+    var num_words: i32 = 0;
+    var max_x: i32 = 0;
+    var in_word: bool = false;
+    var wrapped_for_word: bool = false;
+    for (text) |c, idx| {
+        if (in_word) {
+            switch (c) {
+                ' ', '\n', '\t' => {
+                    if (pos.x > 0) {
+                        pos.x += space_width;
+                    }
+                    in_word = false;
+                    if (word_width > max_word_width) {
+                        max_word_width = word_width;
+                    }
+                    num_words += 1;
+                    word_width = 0;
+                },
+                else => {
+                    const ch = ctx.characters.get(c).?.value;
+                    pos.x += @intCast(i32, ch.advance >> 6);
+                    word_width += @intCast(i32, ch.advance >> 6);
+
+                    if (opts.wrapWidth) |wrapWidth| {
+                        if (pos.x > wrapWidth and !wrapped_for_word) {
+                            pos.y += opts.lineHeight;
+                            pos.x = word_width;
+                            wrapped_for_word = true;
+                        }
+                    }
+                    if (pos.x > max_x) {
+                        max_x = pos.x;
+                    }
+                },
+            }
+        } else {
+            switch (c) {
+                ' ', '\n', '\t' => {},
+                else => {
+                    in_word = true;
+                    wrapped_for_word = false;
+                    const ch = ctx.characters.get(c).?.value;
+                    pos.x += @intCast(i32, ch.advance >> 6);
+                    word_width += @intCast(i32, ch.advance >> 6);
+
+                    if (opts.wrapWidth) |wrapWidth| {
+                        if (pos.x > wrapWidth and !wrapped_for_word) {
+                            pos.y += opts.lineHeight;
+                            pos.x = word_width;
+                            wrapped_for_word = true;
+                        }
+                    }
+                    if (pos.x > max_x) {
+                        max_x = pos.x;
+                    }
+                },
+            }
+        }
+    }
+
+    return .{
+        .min = .{ .x = max_word_width, .y = pos.y + opts.lineHeight },
+        .max = .{ .x = max_x, .y = num_words * opts.lineHeight },
+    };
 }
 
 const RenderTextOptions = struct {
@@ -552,6 +716,9 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
                 ' ', '\n', '\t' => {},
                 else => {
                     startOpt = idx;
+                    const ch = ctx.characters.get(c).?.value;
+                    word_width += @intToFloat(f32, ch.advance >> 6);
+                    total_width += @intToFloat(f32, ch.advance >> 6);
                 },
             }
         }
