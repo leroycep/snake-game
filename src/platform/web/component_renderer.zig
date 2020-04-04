@@ -158,10 +158,14 @@ const RenderedComponent = struct {
                 if (changed) {
                     // Clear children and rebuild
                     self_container.removeChildren();
-                    for (other.Container.children) |*other_child| {
+                    for (other.Container.children) |*other_child, childIdx| {
                         const childElem = try componentToRendered(self.alloc, other_child);
                         element_appendChild(self.element, childElem.element);
                         self_container.children.append(childElem) catch unreachable;
+
+                        if (other.Container.layout == .Grid and other.Container.layout.Grid.areas != null) {
+                            element_setGridArea(childElem.element, childIdx);
+                        }
                     }
                 }
             },

@@ -2,6 +2,7 @@ const std = @import("std");
 const screen = @import("../screen.zig");
 const Screen = screen.Screen;
 const platform = @import("../platform.zig");
+const components = platform.components;
 const Vec2f = platform.Vec2f;
 const Context = platform.Context;
 const Renderer = platform.Renderer;
@@ -25,7 +26,12 @@ pub const Game = struct {
 
     snake: game.Snake,
     food_pos: ?Vec2f = null,
+    time: f64 = 0,
+    score: u32 = 0,
     quit_pressed: bool = false,
+
+    score_str: []const u8 = &[_]u8{},
+    time_str: []const u8 = &[_]u8{},
 
     pub fn init(alloc: *std.mem.Allocator) !*@This() {
         const self = try alloc.create(@This());
@@ -85,6 +91,7 @@ pub const Game = struct {
                 if (pos.sub(self.snake.head_segment.pos).magnitude() < (SNAKE_SEGMENT_LENGTH + 20) / 2) {
                     // Eat it
                     self.food_pos = null;
+                    self.score += 1;
                     self.snake.addSegment();
                 }
             } else {
@@ -93,6 +100,7 @@ pub const Game = struct {
                     .y = LEVEL_OFFSET_Y + self.random.random.float(f32) * LEVEL_HEIGHT - LEVEL_HEIGHT / 2,
                 };
             }
+            self.time += delta;
         }
 
         // Update target angle from key inputs
@@ -120,6 +128,27 @@ pub const Game = struct {
         if (self.food_pos) |pos| {
             context.renderer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
         }
+
+        const Component = components.Component;
+        const Layout = components.Layout;
+        const box = components.box;
+        const text = components.text;
+
+        if (self.time_str.len != 0) {
+            self.alloc.free(self.time_str);
+        }
+        if (self.score_str.len != 0) {
+            self.alloc.free(self.score_str);
+        }
+
+        self.time_str = std.fmt.allocPrint(self.alloc, "Time: {d:.2}", .{self.time}) catch unreachable;
+        self.score_str = std.fmt.allocPrint(self.alloc, "Score: {}", .{self.score}) catch unreachable;
+
+        const component = box(Layout.flex(.Horizontal), &[_]Component{
+            text(self.score_str),
+            text(self.time_str),
+        });
+        context.updateComponent(&component) catch unreachable;
     }
 
     pub fn deinit(screenPtr: *Screen, context: *Context) void {

@@ -118,7 +118,7 @@ const getComponentsEnv = (componentsRoot, getMemory, customEventCallback) => {
     },
 
     element_clearClasses: elemId => {
-      elements[elemId].classList.clear();
+      elements[elemId].className = "component";
     },
 
     element_setGridArea: (elemId, grid_area) => {
