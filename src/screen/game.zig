@@ -20,6 +20,7 @@ const Inputs = struct {
 pub const Game = struct {
     alloc: *std.mem.Allocator,
     screen: Screen,
+    casual: bool,
 
     random: std.rand.DefaultPrng,
     inputs: Inputs = Inputs{},
@@ -30,7 +31,7 @@ pub const Game = struct {
     score: u32 = 0,
     quit_pressed: bool = false,
 
-    pub fn init(alloc: *std.mem.Allocator) !*@This() {
+    pub fn init(alloc: *std.mem.Allocator, casual: bool) !*@This() {
         const self = try alloc.create(@This());
         self.* = .{
             .alloc = alloc,
@@ -41,9 +42,10 @@ pub const Game = struct {
                 .deinitFn = deinit,
                 .stopFn = stop,
             },
+            .casual = casual,
 
             .random = std.rand.DefaultPrng.init(platform.now()),
-            .snake = try game.Snake.init(alloc),
+            .snake = try game.Snake.init(alloc, !casual),
         };
         self.snake.addSegment();
         return self;
@@ -89,7 +91,9 @@ pub const Game = struct {
                 if (pos.sub(self.snake.head_segment.pos).magnitude() < (SNAKE_SEGMENT_LENGTH + 20) / 2) {
                     // Eat it
                     self.food_pos = null;
-                    self.score += 1;
+                    if (!self.casual) {
+                        self.score += 1;
+                    }
                     self.snake.addSegment();
                 }
             } else {
@@ -98,7 +102,9 @@ pub const Game = struct {
                     .y = LEVEL_OFFSET_Y + self.random.random.float(f32) * LEVEL_HEIGHT - LEVEL_HEIGHT / 2,
                 };
             }
-            self.time += delta;
+            if (!self.casual) {
+                self.time += delta;
+            }
         }
 
         // Update target angle from key inputs
@@ -127,24 +133,26 @@ pub const Game = struct {
             context.renderer.pushRect(pos, .{ .x = FOOD_WIDTH, .y = FOOD_HEIGHT }, FOOD_COLOR, 0);
         }
 
-        const Component = components.Component;
-        const Layout = components.Layout;
-        const box = components.box;
-        const text = components.text;
+        if (!self.casual) {
+            const Component = components.Component;
+            const Layout = components.Layout;
+            const box = components.box;
+            const text = components.text;
 
-        var buffer: [100]u8 = undefined;
-        const time_str = std.fmt.bufPrint(buffer[0..50], "Time: {d:.2}", .{self.time}) catch unreachable;
-        const score_str = std.fmt.bufPrint(buffer[50..], "Score: {}", .{self.score}) catch unreachable;
+            var buffer: [100]u8 = undefined;
+            const time_str = std.fmt.bufPrint(buffer[0..50], "Time: {d:.2}", .{self.time}) catch unreachable;
+            const score_str = std.fmt.bufPrint(buffer[50..], "Score: {}", .{self.score}) catch unreachable;
 
-        const component = box(Layout.flex_ex(.{
-            .orientation = .Horizontal,
-            .main_axis_alignment = .SpaceBetween,
-            .cross_axis_alignment = .Start,
-        }), &[_]Component{
-            text(score_str),
-            text(time_str),
-        });
-        context.updateComponent(&component) catch unreachable;
+            const component = box(Layout.flex_ex(.{
+                .orientation = .Horizontal,
+                .main_axis_alignment = .SpaceBetween,
+                .cross_axis_alignment = .Start,
+            }), &[_]Component{
+                text(score_str),
+                text(time_str),
+            });
+            context.updateComponent(&component) catch unreachable;
+        }
     }
 
     pub fn stop(screenPtr: *Screen, context: *Context) void {

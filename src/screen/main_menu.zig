@@ -63,6 +63,7 @@ pub const MainMenu = struct {
 
     dirty: bool = true,
     play_pressed: bool = false,
+    casual_play_pressed: bool = false,
     desc: Option(Desc) = Option(Desc){ .None = {} },
     dependencies: utils.Dependencies(Option(Desc)),
 
@@ -94,6 +95,7 @@ pub const MainMenu = struct {
             .Custom => |eventId| switch (eventId) {
                 NORMAL_PLAY_CLICK => self.play_pressed = true,
                 NORMAL_PLAY_HOVER => self.desc = .{ .Some = .NormalPlay },
+                CASUAL_PLAY_CLICK => self.casual_play_pressed = true,
                 CASUAL_PLAY_HOVER => self.desc = .{ .Some = .CasualPlay },
                 HIGHSCORES_HOVER => self.desc = .{ .Some = .Highscores },
                 else => platform.warn("Unknown event id: {}\n", .{eventId}),
@@ -106,7 +108,12 @@ pub const MainMenu = struct {
         const self = @fieldParentPtr(@This(), "screen", screenPtr);
 
         if (self.play_pressed) {
-            const game = screen.Game.init(self.alloc) catch unreachable;
+            const game = screen.Game.init(self.alloc, false) catch unreachable;
+            return screen.Transition{ .Replace = &game.screen };
+        }
+
+        if (self.casual_play_pressed) {
+            const game = screen.Game.init(self.alloc, true) catch unreachable;
             return screen.Transition{ .Replace = &game.screen };
         }
 

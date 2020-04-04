@@ -16,9 +16,11 @@ pub const Snake = struct {
     segments: std.ArrayList(Segment),
     tail_segment: Segment,
 
+    can_collide: bool,
+
     position_history: ArrayDeque(PastPosition),
 
-    pub fn init(alloc: *std.mem.Allocator) !@This() {
+    pub fn init(alloc: *std.mem.Allocator, can_collide: bool) !@This() {
         return Snake{
             .alloc = alloc,
             .head_segment = Segment{
@@ -32,6 +34,7 @@ pub const Snake = struct {
                 .size = Vec2f{ .x = SNAKE_TAIL_LENGTH, .y = SNAKE_TAIL_WIDTH },
                 .dir = 0,
             },
+            .can_collide = can_collide,
             .position_history = ArrayDeque(PastPosition).init(alloc),
         };
     }
@@ -114,7 +117,7 @@ pub const Snake = struct {
 
             // Check if the head collides with this segment
             const cur_obb = OBB.init(cur_segment.pos, cur_segment.size, cur_segment.dir);
-            if (!self.dead and segment_idx > 1 and cur_obb.collides(head_obb)) {
+            if (self.can_collide and !self.dead and segment_idx > 1 and cur_obb.collides(head_obb)) {
                 self.dead = true;
                 self.head_segment.show = false;
             }
