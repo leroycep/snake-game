@@ -81,8 +81,8 @@ pub const Snake = struct {
         var position_history_idx: usize = self.position_history.len() - 1;
         var prev_segment = &self.head_segment;
         while (prev_segment != &self.tail_segment) : (segment_idx += 1) {
-            var cur_segment = if (segment_idx < self.segments.len)
-                &self.segments.span()[segment_idx]
+            var cur_segment = if (segment_idx < self.segments.items.len)
+                &self.segments.items[segment_idx]
             else
                 &self.tail_segment;
 
@@ -133,7 +133,7 @@ pub const Snake = struct {
     }
 
     pub fn render(self: @This(), renderer: *Renderer, alpha: f64) void {
-        const segments = self.segments.span();
+        const segments = self.segments.items;
         var idx: usize = segments.len;
         self.tail_segment.render(renderer, SEGMENT_COLORS[(idx + 1) % SEGMENT_COLORS.len]);
         while (idx > 0) : (idx -= 1) {

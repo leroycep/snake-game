@@ -20,12 +20,12 @@ pub fn onInit(context: *platform.Context) void {
 }
 
 pub fn onEvent(context: *platform.Context, event: platform.Event) void {
-    const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
+    const current_screen = screen_stack.items[screen_stack.items.len - 1];
     current_screen.onEvent(context, event);
 }
 
 pub fn update(context: *platform.Context, current_time: f64, delta: f64) void {
-    const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
+    const current_screen = screen_stack.items[screen_stack.items.len - 1];
 
     const transition_opt = current_screen.update(context, current_time, delta);
 
@@ -38,7 +38,7 @@ pub fn update(context: *platform.Context, current_time: f64, delta: f64) void {
             },
             .Replace => |new_screen| {
                 current_screen.deinit(context);
-                screen_stack.toSlice()[screen_stack.len - 1] = new_screen;
+                screen_stack.items[screen_stack.items.len - 1] = new_screen;
                 new_screen.start(context);
             },
             .Pop => {
@@ -50,7 +50,7 @@ pub fn update(context: *platform.Context, current_time: f64, delta: f64) void {
 }
 
 pub fn render(context: *platform.Context, alpha: f64) void {
-    const current_screen = screen_stack.toSlice()[screen_stack.len - 1];
+    const current_screen = screen_stack.items[screen_stack.items.len - 1];
 
     current_screen.render(context, alpha);
 }

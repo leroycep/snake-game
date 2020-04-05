@@ -152,7 +152,7 @@ const RenderedComponent = struct {
                     element_clearClasses(self.element);
                     apply_layout(self.element, &other.Container.layout);
                 }
-                var changed = other.Container.children.len != self_container.children.len;
+                var changed = other.Container.children.len != self_container.children.items.len;
                 var idx: usize = 0;
                 while (!changed and idx < other.Container.children.len) : (idx += 1) {
                     const self_child = &self_container.children.span()[idx];

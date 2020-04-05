@@ -7,7 +7,7 @@ const Timer = std.time.Timer;
 pub fn main() !void {
     const alloc = std.heap.c_allocator;
 
-    platform.init(alloc, constants.VIEWPORT_WIDTH, constants.VIEWPORT_HEIGHT);
+    try platform.init(alloc, constants.VIEWPORT_WIDTH, constants.VIEWPORT_HEIGHT);
     defer platform.deinit();
 
     var context = platform.Context{

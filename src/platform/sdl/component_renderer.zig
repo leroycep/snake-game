@@ -523,7 +523,7 @@ pub const Container = struct {
                         break :denom_calc denom;
                     };
                     const height_per_component = @divTrunc(space.h, @intCast(i32, denom));
-                    const num_cols = @divFloor(self.children.len, column.len) + if (self.children.len % column.len > 0) @as(u32, 1) else @as(u32, 0);
+                    const num_cols = @divFloor(self.children.items.len, column.len) + if (self.children.items.len % column.len > 0) @as(u32, 1) else @as(u32, 0);
                     const width_per_component = @divTrunc(space.w, @intCast(i32, num_cols));
                     var yFracUsed: u32 = 0; // Amount of y fractions used
                     for (self.children.span()) |*child, idx| {
@@ -550,7 +550,7 @@ pub const Container = struct {
                         break :denom_calc denom;
                     };
                     const width_per_component = @divTrunc(space.w, @intCast(i32, denom));
-                    const num_rows = @divFloor(self.children.len, row.len) + if (self.children.len % row.len > 0) @as(u32, 1) else @as(u32, 0);
+                    const num_rows = @divFloor(self.children.items.len, row.len) + if (self.children.items.len % row.len > 0) @as(u32, 1) else @as(u32, 0);
                     const height_per_component = @divTrunc(space.h, @intCast(i32, num_rows));
                     var xFracUsed: u32 = 0; // Amount of y fractions used
                     for (self.children.span()) |*child, idx| {
