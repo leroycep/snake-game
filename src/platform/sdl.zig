@@ -18,8 +18,8 @@ pub const Error = error{
     ImgInit,
 };
 
-pub fn logErr(err: Error) Error {
-    std.debug.warn("{} error: {}", .{ err, c.SDL_GetError() });
+pub fn logSDLErr(err: Error) Error {
+    std.debug.warn("{}: {}\n", .{ err, @as([*:0]const u8, c.SDL_GetError()) });
     return err;
 }
 
@@ -27,9 +27,9 @@ pub fn now() u64 {
     return std.time.milliTimestamp();
 }
 
-pub fn init(allocator: *std.mem.Allocator, screenWidth: i32, screenHeight: i32) void {
+pub fn init(allocator: *std.mem.Allocator, screenWidth: i32, screenHeight: i32) !void {
     if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_AUDIO) != 0) {
-        panic("SDL_Init failed: {c}\n", .{c.SDL_GetError()});
+        return logSDLErr(error.InitFailed);
     }
 
     sdlAssertZero(c.SDL_GL_SetAttribute(.SDL_GL_CONTEXT_PROFILE_MASK, c.SDL_GL_CONTEXT_PROFILE_ES));
@@ -37,7 +37,7 @@ pub fn init(allocator: *std.mem.Allocator, screenWidth: i32, screenHeight: i32) 
     sdlAssertZero(c.SDL_GL_SetAttribute(.SDL_GL_CONTEXT_MINOR_VERSION, 0));
 
     window = c.SDL_CreateWindow("Dodger", c.SDL_WINDOWPOS_UNDEFINED_MASK, c.SDL_WINDOWPOS_UNDEFINED_MASK, screenWidth, screenHeight, c.SDL_WINDOW_SHOWN | c.SDL_WINDOW_OPENGL | c.SDL_WINDOW_RESIZABLE) orelse {
-        panic("SDL_CreateWindow failed: {c}\n", .{c.SDL_GetError()});
+        return logSDLErr(error.CouldntCreateWindow);
     };
 
     context = c.SDL_GL_CreateContext(window);
