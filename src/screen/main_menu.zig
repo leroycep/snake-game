@@ -145,7 +145,7 @@ pub const MainMenu = struct {
         const grid = Layout.grid(.{
             .row = &[_]u32{ 1, 1 },
             .column = &[_]u32{ 1, 3 },
-            .areas = &[_][]usize{
+            .areas = &[_][]const usize{
                 &[_]usize{ 0, 0 },
                 &[_]usize{ 2, 1 },
             },

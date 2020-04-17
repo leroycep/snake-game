@@ -57,7 +57,7 @@ pub fn element_setGridTemplateColumns(element: u32, rows: []const u32) void {
     element_setGridTemplateColumnsS(element, rows.ptr, rows.len);
 }
 
-pub fn element_setGridTemplateAreas(element: u32, grid_areas: [][]const usize) void {
+pub fn element_setGridTemplateAreas(element: u32, grid_areas: []const []const usize) void {
     const ARBITRARY_BUFFER_SIZE = 1024;
     const width = grid_areas[0].len;
     const height = grid_areas.len;

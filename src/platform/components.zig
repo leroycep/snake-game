@@ -41,13 +41,13 @@ pub const FlexLayout = struct {
 pub const GridTemplate = struct {
     /// A 2d array of areas, with each number representing the index of the
     /// child component it is for
-    areas: ?[][]usize = null,
+    areas: ?[]const []const usize = null,
 
     /// An array of the fractional units that the each component will take up.
     /// If there are more child components defined than there are fractional units
     /// given, a new row will be generated with the same fractional units.
-    column: ?[]u32 = null,
-    row: ?[]u32 = null,
+    column: ?[]const u32 = null,
+    row: ?[]const u32 = null,
 
     pub fn is_valid(self: *const @This(), children: []Component) bool {
         var at_least_one_not_null = false;
