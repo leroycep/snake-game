@@ -9,7 +9,7 @@ jobs:
             - uses: actions/checkout@v2
             - uses: goto-bus-stop/setup-zig@v1
               with:
-                  version: master
+                  version: 0.6.0
             - name: Install SDL for native build
               run: sudo apt-get install libsdl2-dev libfreetype-dev
             - run: zig build all
@@ -20,5 +20,5 @@ jobs:
             - uses: actions/checkout@v2
             - uses: goto-bus-stop/setup-zig@v1
               with:
-                  version: master
+                  version: 0.6.0
             - run: zig fmt --check build.zig ./src/ ./tools/

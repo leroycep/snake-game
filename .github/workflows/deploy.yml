@@ -14,7 +14,7 @@ jobs:
             - name: Download latest zig
               uses: goto-bus-stop/setup-zig@v1
               with:
-                  version: master
+                  version: 0.6.0
 
             - name: Build snake-game
               run: zig build wasm -Drelease-safe
