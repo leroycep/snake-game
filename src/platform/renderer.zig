@@ -62,7 +62,6 @@ const Mode = enum {
 pub const Renderer = struct {
     mode: Mode,
 
-    const NUM_ATTR = 5;
     verts: [NUM_ATTR * 512]f32 = undefined,
     vertIdx: usize,
     indices: [2 * 3 * 512]platform.GLushort = undefined,
@@ -74,7 +73,6 @@ pub const Renderer = struct {
     ebo: platform.GLuint,
     projectionMatrixUniformLocation: platform.GLint,
 
-    const FONT_ATTR = 7;
     font_verts: [FONT_ATTR * 512]f32 = undefined,
     font_vertIdx: usize,
     font_indices: [2 * 3 * 512]platform.GLushort = undefined,
@@ -84,6 +82,9 @@ pub const Renderer = struct {
     font_ebo: platform.GLuint,
     font_texture: platform.GLuint,
     font_projectionMatrixUniformLocation: platform.GLint,
+
+    const NUM_ATTR = 5;
+    const FONT_ATTR = 7;
 
     pub fn init() Renderer {
         platform.glEnable(platform.GL_BLEND);
@@ -238,7 +239,7 @@ pub const Renderer = struct {
         return (self.vertIdx + numVerts) * NUM_ATTR >= self.verts.len or self.indIdx + numInd >= self.indices.len;
     }
 
-    fn pushRect(self: *Renderer, pos: Vec2f, size: Vec2f, color: platform.Color, rot: f32) void {
+    pub fn pushRect(self: *Renderer, pos: Vec2f, size: Vec2f, color: platform.Color, rot: f32) void {
         if (self.mode != .Normal or self.wouldOverflow(4, 6)) {
             self.flush();
         }
@@ -267,7 +268,7 @@ pub const Renderer = struct {
         return (self.font_vertIdx + numVerts) * FONT_ATTR >= self.font_verts.len or self.font_indIdx + numInd >= self.font_indices.len;
     }
 
-    fn pushFontRect(self: *Renderer, dst: Rect2f, uv: Rect2f, texture: platform.GLuint, color: platform.Color) void {
+    pub fn pushFontRect(self: *Renderer, dst: Rect2f, uv: Rect2f, texture: platform.GLuint, color: platform.Color) void {
         if (self.mode != .Font or self.font_texture != texture or self.fontWouldOverflow(4, 6)) {
             self.flush();
         }
@@ -302,7 +303,7 @@ pub const Renderer = struct {
         self.font_indIdx = 0;
     }
 
-    fn flush(self: *Renderer) void {
+    pub fn flush(self: *Renderer) void {
         switch (self.mode) {
             .Normal => self.flushNormal(),
             .Font => self.flushFont(),
@@ -310,7 +311,7 @@ pub const Renderer = struct {
         self.reset();
     }
 
-    fn flushNormal(self: *Renderer) void {
+    pub fn flushNormal(self: *Renderer) void {
         const screen_size = platform.getScreenSize();
         const translationMatrix = [_]f32{
             1, 0, 0, -self.translation.x,

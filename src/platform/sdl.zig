@@ -23,7 +23,7 @@ pub fn logSDLErr(err: Error) Error {
     return err;
 }
 
-pub fn now() u64 {
+pub fn now() i64 {
     return std.time.milliTimestamp();
 }
 

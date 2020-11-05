@@ -624,8 +624,7 @@ const SizeHint = struct {
 
 pub fn getTextSizeHint(ctx: Context, text: []const u8, opts: TextSizeHintOptions) SizeHint {
     const space_width = get_space_width: {
-        const kv = ctx.characters.get(' ').?;
-        const ch = kv.value;
+        const ch = ctx.characters.get(' ').?;
         break :get_space_width @intCast(i32, ch.advance >> 6);
     };
 
@@ -653,7 +652,7 @@ pub fn getTextSizeHint(ctx: Context, text: []const u8, opts: TextSizeHintOptions
                     word_width = 0;
                 },
                 else => {
-                    const ch = ctx.characters.get(c).?.value;
+                    const ch = ctx.characters.get(c).?;
                     pos.x += @intCast(i32, ch.advance >> 6);
                     word_width += @intCast(i32, ch.advance >> 6);
 
@@ -675,7 +674,7 @@ pub fn getTextSizeHint(ctx: Context, text: []const u8, opts: TextSizeHintOptions
                 else => {
                     in_word = true;
                     wrapped_for_word = false;
-                    const ch = ctx.characters.get(c).?.value;
+                    const ch = ctx.characters.get(c).?;
                     pos.x += @intCast(i32, ch.advance >> 6);
                     word_width += @intCast(i32, ch.advance >> 6);
 
@@ -726,8 +725,7 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
     const line_height = @intToFloat(f32, ctx.face_line_height >> 6) * opts.lineHeight;
 
     const space_width = get_space_width: {
-        const kv = ctx.characters.get(' ').?;
-        const ch = kv.value;
+        const ch = ctx.characters.get(' ').?;
         break :get_space_width @intToFloat(f32, ch.advance >> 6);
     };
 
@@ -746,7 +744,7 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
                     word_width = 0;
                 },
                 else => {
-                    const ch = ctx.characters.get(c).?.value;
+                    const ch = ctx.characters.get(c).?;
                     word_width += @intToFloat(f32, ch.advance >> 6);
                     total_width += @intToFloat(f32, ch.advance >> 6);
                 },
@@ -756,7 +754,7 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
                 ' ', '\n', '\t' => {},
                 else => {
                     startOpt = idx;
-                    const ch = ctx.characters.get(c).?.value;
+                    const ch = ctx.characters.get(c).?;
                     word_width += @intToFloat(f32, ch.advance >> 6);
                     total_width += @intToFloat(f32, ch.advance >> 6);
                 },
@@ -793,11 +791,10 @@ pub fn renderText(ctx: Context, text: []const u8, opts: RenderTextOptions) !std.
 
         // Add each character in the text to the list of glyphs
         for (word.text) |c| {
-            const kv = ctx.characters.get(c) orelse {
+            const ch = ctx.characters.get(c) orelse {
                 std.debug.warn("Unknown character: {c}\n", .{c});
                 unreachable;
             };
-            const ch = kv.value;
             const advance = @intToFloat(f32, ch.advance >> 6);
             defer x += advance;
 

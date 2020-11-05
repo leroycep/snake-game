@@ -44,7 +44,7 @@ pub const Game = struct {
             },
             .casual = casual,
 
-            .random = std.rand.DefaultPrng.init(platform.now()),
+            .random = std.rand.DefaultPrng.init(@bitCast(u64, platform.now())),
             .snake = try game.Snake.init(alloc, !casual),
         };
         self.snake.addSegment();
